@@ -160,3 +160,8 @@ Offen für Phase 1: TV-Ergebnis hier eintragen, Router-Typ (Präsenz), Kalenderq
     **Annahme:** Registry-Pfad ghcr.io/cirko54/abendausgabe; Forks setzen ihren eigenen.
 
 35. Folgen für den Phase-1-Plan (Nr. 23): Die Reihenfolge bleibt. Schritt 5 (Weltecke) baut den Quellenkatalog mit Metadaten und den Blickwinkel-Vergleich (SPEC §2.1); Schritt 6 (Assembler) bekommt den Fenster-Block als feste Regel. Die Oberfläche bleibt deutsch; die Übersetzbarkeit der UI-Texte ist offen (SPEC §15).
+
+## 2026-11-01 – Stand Abnahme Schritt 1 (NAS)
+
+36. Erfüllt: Server läuft auf dem NAS (selbst gebaut, Nr. 24), /healthz, /tv/ und /c/ antworten vom Mac über die NAS-IP; Haushaltskonfiguration aktiv, Datenbank übernommen (Nr. 27); feste IP und Backup-Aufgabe eingerichtet.
+    Offen: App am Fernseher zeigt die Sendung vom NAS (Adresse per adb umgestellt, Fernseher war im Standby); Handy über die NAS-IP; Testsendung bei ausgeschaltetem Mac; erstes nächtliches Backup im Ordner backups.
