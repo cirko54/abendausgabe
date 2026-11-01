@@ -159,9 +159,29 @@ Offen für Phase 1: TV-Ergebnis hier eintragen, Router-Typ (Präsenz), Kalenderq
     - Fertiges Image für amd64 und arm64 aus GitHub Actions in der GitHub Container Registry; `ABEND_IMAGE` wählt ein anderes (Fork, selbst gebaut). Selbst bauen bleibt möglich (`make deploy-nas`).
     **Annahme:** Registry-Pfad ghcr.io/cirko54/abendausgabe; Forks setzen ihren eigenen.
 
-35. Folgen für den Phase-1-Plan (Nr. 23): Die Reihenfolge bleibt. Schritt 5 (Weltecke) baut den Quellenkatalog mit Metadaten und den Blickwinkel-Vergleich (SPEC §2.1); Schritt 6 (Assembler) bekommt den Fenster-Block als feste Regel. Die Oberfläche bleibt deutsch; die Übersetzbarkeit der UI-Texte ist offen (SPEC §15).
+35. Folgen für den Phase-1-Plan (Nr. 23): Die Reihenfolge bleibt. Schritt 5 (Weltecke) baut den Quellenkatalog mit Metadaten und den Blickwinkel-Vergleich (SPEC §2.1); Schritt 6 (Assembler) bekommt den Fenster-Block (seit Nr. 40 dosiert, keine Quote). Die Oberfläche bleibt deutsch; die Übersetzbarkeit der UI-Texte ist offen (SPEC §15).
 
 ## 2026-11-01 – Stand Abnahme Schritt 1 (NAS)
 
-36. Erfüllt: Server läuft auf dem NAS (selbst gebaut, Nr. 24), /healthz, /tv/ und /c/ antworten vom Mac über die NAS-IP; Haushaltskonfiguration aktiv, Datenbank übernommen (Nr. 27); feste IP und Backup-Aufgabe eingerichtet.
-    Offen: App am Fernseher zeigt die Sendung vom NAS (Adresse per adb umgestellt, Fernseher war im Standby); Handy über die NAS-IP; Testsendung bei ausgeschaltetem Mac; erstes nächtliches Backup im Ordner backups.
+36. Abgenommen: Server läuft auf dem NAS (selbst gebaut, Nr. 24), Haushaltskonfiguration aktiv, Datenbank übernommen (Nr. 27), feste IP und Backup-Aufgabe eingerichtet. App am Fernseher und Handys laufen über die NAS-IP, die Testsendung läuft ohne Mac.
+    Offen bleibt nur die Sichtprüfung des ersten nächtlichen Backups im Ordner backups.
+
+## 2026-11-01 – Plan Phase 1, Schritt 2: Tagesschau und Wetter vor acht
+
+37. Ab jetzt stellt der Server bei jedem Sendestart einen Tagesablauf zusammen, statt die Testsendung abzuspielen: Begrüßung, Wetter vor acht, Aufmacher-Frage, tagesschau, Sendeschluss. Das ist die erste Fassung der Notausgabe (SPEC §11.5, ohne LLM, unter assembly/); der Assembler mit Regeln folgt in Schritt 6. `ABEND_PROGRAM=test` spielt weiter die Testsendung.
+    Neuer Blocktyp `video`. OK an der Fernbedienung pausiert bzw. spielt weiter; „Weiter“ erst nach dem Ende, mit Pfeil rechts oder über das Handy. Ein versehentliches OK soll die Nachrichten nicht überspringen. Nach dem Ende startet nichts automatisch (SPEC §3 Nr. 1).
+    Welche tagesschau läuft, entscheidet der Server erst beim Start des Blocks (GET /api/media/tagesschau), nicht beim Zusammenstellen. So passt die Wahl auch, wenn die Sendung früher beginnt: 19:58–20:16 Uhr der Livestream von tagesschau24 [H 80 %, dass tagesschau24 die 20-Uhr-Ausgabe zeitgleich sendet], sonst die 20-Uhr-Ausgabe von heute als MP4, sonst die neueste „tagesschau in 100 Sekunden“ von heute.
+    Aufmacher-Frage („Womit macht die tagesschau heute auf?“) nur, wenn die heutige 20-Uhr-Ausgabe schon vorliegt: richtige Antwort ist das erste Thema der Themenliste aus der API [H 85 %, dass die Liste in Sendereihenfolge steht], Ablenker sind zwei weitere Themen derselben Sendung. Wörtlich aus der Quelle, ohne LLM.
+    Wetter vor acht über MediathekViewWeb, nur wenn die Sendung von heute ist (gestriges Wetter hilft niemandem). Fehlt sie, entfällt der Block; die eigene Wetterkachel aus Open-Meteo folgt mit dem Modul wetter_himmel.
+    Abnahme: Livestream (hls.js) und MP4 am Fernseher getestet, Ergebnis hier eingetragen.
+
+38. Neue Abhängigkeit hls.js 1.7.3 (Apache-2.0), lokal ausgeliefert unter web/shared/vendor/ (Nr. 13: keine CDN-Abhängigkeit), Integrität gegen den npm-Hash geprüft. Nur für HLS ohne native Unterstützung; spielt der Browser HLS selbst, bleibt hls.js ungenutzt.
+    Version: neueste, die älter als zwei Wochen ist (1.7.4 erschien am 28.10.2026).
+    Verworfen: Video.js oder Shaka Player (größer, für einen Livestream unnötig).
+
+39. Neue Quelle MediathekViewWeb (Community-Projekt): höchstens 30 Abfragen pro Stunde über den zentralen Ratelimiter, 10 Minuten Cache, eigener User-Agent.
+
+40. Blasen einreißen per Nudging, nicht per Quote (SPEC §2.1, auf Hinweis des Projektinhabers neu gefasst). Der Fenster-Block ist ein weiches Ziel („in der Regel einer“); wie weit er vom Gewohnten wegführt und wie scharf er provoziert, wird pro Runde dosiert und aus „zu leicht“/„zu zäh“, Skips und Morgen-danach-Wert gelernt. Fremdes kommt bevorzugt über eine Brücke aus eigenen Interessen und als Rätsel, nicht als Belehrung. Übersprungene Fenster-Blöcke senken die Dosis, ohne Vorwurf.
+    Grund: Fühlt sich der Blick über den Tellerrand wie Pflicht an, wird die eigene Blase mittelfristig wieder die angenehmere Wahl. Ziel ist sozialer Kitt, nicht Erziehung.
+    Verworfen: feste Quote („mindestens ein Block“).
+    Offen für Schritt 6: eine Profilfrage, wie gern jemand provoziert werden will (ergänzt Frage 5 „Wie sehr willst du gefordert werden?“).

@@ -2,7 +2,9 @@
 
 Ein privater Sender für den eigenen Haushalt: einmal am Abend eine endliche, interaktive Sendung auf dem Fernseher, die Handys sind die Controller. Statt Endlos-Feed gibt es einen Sendeablauf mit Sendeschluss. Statt zuzuschauen rät, schätzt und tippt die Runde gemeinsam, und die Auflösung kommt erst danach.
 
-Die Abendausgabe bedient nicht den eigenen Filter, sie erweitert ihn: Quellen aus anderen Ländern, Sprachen und Lagern, dieselbe Geschichte aus mehreren Blickwinkeln und Fundstücke aus dem langen Schwanz des Netzes. Gegen die Dopamin-Konkurrenz setzt sie nicht auf mehr Reize, sondern auf gemeinsames Spielen, Neugier und ein klares Ende.
+Die Idee: gemeinsam vor dem Fernseher sitzen wie früher, mit einer Mischung aus Unterhaltung, Anregung und Miteinander, die jeden Abend anders ist. Sie entsteht aus Tagesaktuellem, den Interessen der Anwesenden, Zufall und dem, was Einzelne mitbringen.
+
+Dabei bedient die Abendausgabe nicht den eigenen Filter, sie erweitert ihn, denn Filterblasen arbeiten gegen den sozialen Kitt. Das geschieht ohne Zwang: Fremde Perspektiven kommen als Rätsel und über Brücken aus den eigenen Interessen, für jeden so dosiert, wie er oder sie es braucht. Gegen die Dopamin-Konkurrenz setzt sie nicht auf mehr Reize, sondern auf gemeinsames Spielen, Neugier und ein klares Ende.
 
 - Konzept, Ziele und Invarianten: [docs/SPEC.md](docs/SPEC.md)
 - Entscheidungen mit Begründung: [docs/decisions.md](docs/decisions.md)

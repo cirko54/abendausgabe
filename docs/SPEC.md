@@ -27,15 +27,28 @@ Messgrößen, pro Person, sichtbar in Statistik und Programmkonferenz:
 
 Verboten als Optimierungsziel: Verweildauer, Klickrate, Zahl der Sendungen. Diese Werte dürfen geloggt werden, fließen aber nie in Ranking oder Assembler ein.
 
-### 2.1 Gegen die Blase, ohne den Kampf um Aufmerksamkeit zu verlieren [S]
+### 2.1 Grundgedanke: gemeinsam vor dem Fernseher, und raus aus der Blase, ohne Zwang [S]
 
-Die Abendausgabe bedient den eigenen Filter nicht, sie erweitert ihn. Das Interessenmodell entscheidet vor allem, *wie* ein Thema serviert wird (Schwierigkeit, Einstieg, Interaktion), und nur zum Teil, *was* kommt.
+Die Abendausgabe will das gemeinsame Erlebnis „wie früher“: Alle sitzen zusammen vor dem Fernseher und erleben eine Mischung aus Unterhaltung, geistiger Anregung und Miteinander. Kein Abend gleicht dem anderen, denn jede Sendung mischt Tagesaktuelles, die Interessen der Anwesenden, Zufall und das, was Einzelne mitbringen (Wunschzettel, Spotlight, Moment des Tages).
 
-- Fenster: Jede Sendung enthält mindestens einen Block von außerhalb der eigenen Blase, gewählt nach Abstand in den Quellmetadaten (Land, Sprache, Perspektive, Träger) zu dem, was die Runde zuletzt gesehen hat. Nie nach erwarteter Klickrate.
-- Blickwinkel: Dieselbe Geschichte über Quellen aus verschiedenen Ländern und Lagern clustern und zeigen, wer berichtet, wie, und wer schweigt (Idee wie Ground News, eigene Umsetzung ohne deren Daten). Erst raten, dann sehen: „Aus welchem Land stammt diese Schlagzeile?“
+Filterblasen arbeiten gegen den sozialen Kitt einer Gesellschaft; die Abendausgabe soll sie einreißen. Fühlt sich das aber wie Pflicht an, ist die eigene Blase mittelfristig wieder die angenehmere Wahl. Deshalb Nudging statt Quote: gezielte Reize und Provokationen, für jeden so dosiert, wie er oder sie es gerade braucht.
+
+- Brücke statt Bruch: Fremdes kommt über einen eigenen Zugang herein, etwa ein Fremdthema über ein bekanntes Hobby, eine ferne Region über ein vertrautes Problem.
+- Dosis pro Person: Wie weit ein Block vom Gewohnten wegführt und wie scharf er provoziert, lernt das System aus „zu leicht“/„zu zäh“, Skips und dem Morgen-danach-Wert, nie aus der Verweildauer. Manche brauchen einen sanften Einstieg, andere den Widerspruch.
+- Spiel statt Predigt: Die fremde Perspektive kommt als Rätsel („Aus welchem Land stammt diese Schlagzeile?“, „Wer hat darüber nicht berichtet?“). Raten macht neugierig, Belehren macht trotzig.
+- Freiwilligkeit bleibt sichtbar: Jeder Block lässt sich überspringen. Ein übersprungener Block ist ein Signal für die Dosis, kein Fehler, und wird nie vorgehalten.
+- Der Tisch als Hebel: Die wirksamste fremde Perspektive sitzt oft auf dem Sofa. Spotlight-Blöcke lassen Einzelne ihr Thema mitbringen und erklären; Auflösungen sind Anlass zum Gespräch, nicht dessen Ende.
+- Zufall: Ein kleiner Anteil echter Überraschung, damit der Abend nicht berechenbar wird.
+
+Bausteine:
+
+- Fenster: In der Regel ein Block pro Sendung von außerhalb der gemeinsamen Blase, gewählt nach Abstand in den Quellmetadaten (Land, Sprache, Perspektive, Träger). Wie weit er wegführt, richtet sich nach der Runde; nie nach erwarteter Klickrate.
+- Blickwinkel: Dieselbe Geschichte über Quellen aus verschiedenen Ländern und Lagern clustern und zeigen, wer berichtet, wie, und wer schweigt (Idee wie Ground News, eigene Umsetzung ohne deren Daten).
 - Ausgrabung: Der lange Schwanz zählt: kleine Blogs, Newsletter, Regional- und Auslandspresse, Preprints, Archive, Podcasts. Bonus für Neuheit und Belegtheit, nicht für Popularität.
-- Gegen die Dopamin-Konkurrenz gewinnt die Sendung nicht durch Reizdichte, sondern durch das, was ein Feed nicht kann: gemeinsam raten und gegeneinander spielen, die Neugierlücke vor jeder Auflösung, kurze Blöcke mit Tempo, Endlichkeit mit einem verdienten Dessert. Ob das reicht, zeigen Morgen-danach-Wert und Abbruchrate, nicht die Verweildauer [H 60%].
 
+Gegen die Dopamin-Konkurrenz gewinnt die Sendung nicht durch Reizdichte, sondern durch das, was ein Feed nicht kann: gemeinsam raten und gegeneinander spielen, die Neugierlücke vor jeder Auflösung, kurze Blöcke mit Tempo, Endlichkeit mit einem verdienten Dessert. Ob das reicht, zeigen Morgen-danach-Wert und Abbruchrate, nicht die Verweildauer [H 60%].
+
+## 3 Designinvarianten
 
 1. Endlich: Jede Sendung hat eine Soll-Dauer und einen Sendeschluss-Screen. Kein Autoplay, keine Endlosliste, kein „mehr davon“ nach Sendeschluss (Ausnahme: Joker, Abschnitt 6).
 2. Erst raten, dann sehen: Hat ein Block eine Interaktion, erscheinen Zusammenfassung und Auflösung erst nach der Eingabe aller Anwesenden oder nach Timeout.
