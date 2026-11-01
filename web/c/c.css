@@ -1,0 +1,50 @@
+:root { color-scheme: dark; }
+html, body { min-height: 100%; }
+body {
+  font-size: 18px;
+  line-height: 1.45;
+  padding: max(16px, env(safe-area-inset-top)) 18px max(16px, env(safe-area-inset-bottom));
+  box-sizing: border-box;
+}
+.app { max-width: 480px; margin: 0 auto; min-height: calc(100vh - 32px); display: flex; flex-direction: column; }
+.top { display: flex; align-items: center; gap: 10px; color: var(--muted); font-size: 16px; }
+.dot { width: 14px; height: 14px; border-radius: 50%; display: inline-block; }
+.body { flex: 1; display: flex; flex-direction: column; justify-content: center; padding: 24px 0; }
+h1 { font-size: 26px; line-height: 1.2; margin: 0 0 12px; }
+.muted { color: var(--muted); }
+.error { color: #ffb4a8; min-height: 1.4em; }
+
+.big {
+  display: block; width: 100%;
+  padding: 18px; margin: 10px 0;
+  font-size: 20px; font-weight: 700;
+  border: 2px solid var(--line); border-radius: 14px;
+  background: var(--surface);
+}
+.big.primary { background: var(--text); color: var(--night); border-color: var(--text); }
+.big:active { transform: scale(0.98); }
+.big:disabled { opacity: 0.4; }
+.person { display: flex; align-items: center; gap: 12px; text-align: left; }
+
+input[type="password"], input[type="number"] {
+  width: 100%; box-sizing: border-box;
+  font: inherit; font-size: 24px; letter-spacing: 0.2em;
+  padding: 14px; border-radius: 12px; border: 2px solid var(--line);
+  background: var(--night); color: var(--text);
+}
+input[type="range"] { width: 100%; height: 44px; accent-color: var(--text); }
+.value { font-size: 34px; font-weight: 700; text-align: center; margin: 8px 0 4px; }
+
+.foot { display: flex; flex-wrap: wrap; gap: 8px; padding-bottom: 6px; }
+.small {
+  flex: 1 1 auto;
+  padding: 10px 12px; font-size: 15px;
+  border: 1px solid var(--line); border-radius: 10px; background: transparent; color: var(--muted);
+}
+.foot a { color: var(--muted); font-size: 15px; padding: 10px 6px; }
+.toast { color: var(--muted); text-align: center; min-height: 1.4em; font-size: 15px; }
+
+/* Ruhemodus: fast schwarz, damit das Handy weggelegt wird (SPEC §10.2) */
+body.rest { background: #000; }
+body.rest .app { justify-content: center; align-items: center; color: #3a4a5c; }
+.rest-text { font-size: 18px; text-align: center; }

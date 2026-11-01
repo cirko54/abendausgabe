@@ -1,0 +1,48 @@
+# Profilfragebogen (SPEC §4.1). Alles freiwillig, jederzeit änderbar, Antworten versioniert.
+version: 1
+intro: "Alles ist freiwillig und jederzeit änderbar. Je mehr du sagst, desto besser passt die Sendung zu dir."
+fields:
+  - id: talk_for_hours
+    type: textarea
+    label: "Worüber könntest du stundenlang reden?"
+  - id: creators
+    type: links
+    label: "Kanäle und Creator, die du gern schaust"
+    hint: "Ein Link pro Zeile. Eine YouTube-Kanal-URL genügt."
+  - id: want_to_understand
+    type: textarea
+    label: "Was würdest du gern besser verstehen oder können?"
+  - id: games
+    type: rank
+    label: "Welche Spiele machen dir Spaß?"
+    hint: "Lieblingsspiel nach oben schieben."
+    options: ["Ort raten", "Schätzen", "Quiz", "Schach", "Kurve zeichnen", "Abstimmen"]
+  - id: challenge
+    type: slider
+    label: "Wie sehr willst du gefordert werden?"
+    min: 0
+    max: 10
+    min_label: "entspannt"
+    max_label: "hart"
+  - id: annoyances
+    type: textarea
+    label: "Was nervt dich an gemeinsamen TV-Abenden?"
+    hint: "Ehrlich sein hilft am meisten."
+  - id: no_go_topics
+    type: tags
+    label: "Themen, die du nicht sehen willst"
+    hint: "Mit Komma trennen."
+  - id: can_explain
+    type: text
+    label: "Ein Thema, das du den anderen mal erklären könntest"
+  - id: evenings
+    type: weekdays
+    label: "An welchen Abenden bist du meistens da?"
+visibility:
+  label: "Wer darf deine Antworten sehen?"
+  options:
+    - {id: self, label: "Nur ich"}
+    - {id: admins, label: "Nur die Admins"}
+    - {id: all, label: "Alle im Haushalt"}
+  default_member: self
+  default_admin: admins

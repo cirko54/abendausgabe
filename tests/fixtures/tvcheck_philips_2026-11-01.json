@@ -1,0 +1,85 @@
+{
+  "ua": "Mozilla/5.0 (Linux; Andr0id 11; 2021/22 Philips UHD Andr0id TV) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/77.0.3865.120 Safari/537.36 OPR/46.0.2207.0 OMI/4.20.3.56.Bee2.27 Model/TPVision-MT9970",
+  "startedAt": "2026-11-01T11:25:31.112Z",
+  "media": {
+    "mp4": {
+      "canPlayType": "probably",
+      "ok": true,
+      "tested": true,
+      "detail": "spielt"
+    },
+    "mse": true,
+    "hls_native": {
+      "canPlayType": "",
+      "ok": false,
+      "tested": false
+    }
+  },
+  "pointer": {
+    "moves": 179,
+    "clicks": 11
+  },
+  "startedVia": "click",
+  "screen": {
+    "width": 1920,
+    "height": 1080,
+    "innerWidth": 1280,
+    "innerHeight": 720,
+    "dpr": 1.5
+  },
+  "keys": [
+    {
+      "label": "Pfeil hoch",
+      "missed": true
+    },
+    {
+      "label": "Pfeil runter",
+      "missed": true
+    },
+    {
+      "label": "Pfeil links",
+      "missed": true
+    },
+    {
+      "label": "Pfeil rechts",
+      "missed": true
+    },
+    {
+      "label": "OK",
+      "missed": true
+    },
+    {
+      "label": "Zurück",
+      "missed": true
+    }
+  ],
+  "js": {
+    "es2017": true,
+    "es2020": false,
+    "fetch": true,
+    "promise": true
+  },
+  "css": {
+    "flex": true,
+    "grid": true
+  },
+  "websocket": {
+    "ok": true,
+    "detail": "144 ms"
+  },
+  "font": {
+    "ok": true,
+    "detail": ""
+  },
+  "mediaUrls": {
+    "hls": "https://tagesschau-live.ard-mcdn.de/tagesschau/live/hls/de/master.m3u8",
+    "mp4": "https://tagesschau-progressive.ard-mcdn.de/video/2026/1101/TV-20261101-0934-2200.webs.h264.mp4",
+    "error": null,
+    "youtube_id": "jNQXAC9IVRw"
+  },
+  "youtube": {
+    "ok": true,
+    "detail": "spielt"
+  },
+  "fps": 58
+}

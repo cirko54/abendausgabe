@@ -1,0 +1,12 @@
+{
+  "channels": [
+    {
+      "title": "tagesschau24",
+      "streams": {
+        "adaptivestreaming": "https://example.invalid/live/tagesschau24/master.m3u8?x=1",
+        "h264s": "https://example.invalid/video/clip_s.mp4"
+      }
+    },
+    {"title": "ohne Video", "details": "https://www.tagesschau.de/api2u/x.json"}
+  ]
+}

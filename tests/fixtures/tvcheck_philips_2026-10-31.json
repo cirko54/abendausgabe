@@ -1,0 +1,77 @@
+{
+  "ua": "Mozilla/5.0 (Linux; Andr0id 11; 2021/22 Philips UHD Andr0id TV) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/77.0.3865.120 Safari/537.36 OPR/46.0.2207.0 OMI/4.20.3.56.Bee2.27 Model/TPVision-MT9970",
+  "startedAt": "2026-10-31T22:14:34.306Z",
+  "media": {
+    "mp4": {
+      "canPlayType": "probably",
+      "ok": false
+    },
+    "mse": true,
+    "hls_native": {
+      "canPlayType": "",
+      "ok": false
+    }
+  },
+  "screen": {
+    "width": 1920,
+    "height": 1080,
+    "innerWidth": 1280,
+    "innerHeight": 720,
+    "dpr": 1.5
+  },
+  "js": {
+    "es2017": true,
+    "es2020": false,
+    "fetch": true,
+    "promise": true
+  },
+  "css": {
+    "flex": true,
+    "grid": true
+  },
+  "websocket": {
+    "ok": true,
+    "detail": "45 ms"
+  },
+  "font": {
+    "ok": true,
+    "detail": ""
+  },
+  "mediaUrls": {
+    "hls": null,
+    "mp4": null,
+    "error": "HTTPStatusError: Redirect response '308 Permanent Redirect' for url 'https://www.tagesschau.de/api2u/channels/'\nRedirect location: '/api2u/channels'\nFor more information check: https://developer.mozilla.org/en-US/docs/Web/HTTP/Status/308",
+    "youtube_id": "jNQXAC9IVRw"
+  },
+  "youtube": {
+    "ok": true,
+    "detail": "spielt"
+  },
+  "fps": 57,
+  "keys": [
+    {
+      "label": "Pfeil hoch",
+      "missed": true
+    },
+    {
+      "label": "Pfeil runter",
+      "missed": true
+    },
+    {
+      "label": "Pfeil links",
+      "missed": true
+    },
+    {
+      "label": "Pfeil rechts",
+      "missed": true
+    },
+    {
+      "label": "OK",
+      "missed": true
+    },
+    {
+      "label": "Zurück",
+      "missed": true
+    }
+  ]
+}

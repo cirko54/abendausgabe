@@ -1,0 +1,33 @@
+# Testsendung für Phase 0. Ab Phase 1 stellt der Assembler den Ablauf zusammen.
+# Blocktypen: info | estimate | choice | end
+blocks:
+  - id: begruessung
+    type: info
+    title: "Guten Abend"
+    body: "Das ist die Testsendung der Abendausgabe. Zwei Fragen, dann ist Schluss."
+    est_minutes: 1
+  - id: mond
+    type: estimate
+    title: "Schätzfrage"
+    question: "Wie weit ist der Mond im Mittel von der Erde entfernt?"
+    unit: "km"
+    min: 1000
+    max: 10000000
+    log: true
+    truth: 384400
+    source: "NASA: mittlere Entfernung Erde–Mond"
+    timeout_s: 60
+    est_minutes: 2
+  - id: einwohner
+    type: choice
+    title: "Auswahlfrage"
+    question: "Wo leben mehr Menschen: in Serbien oder in Bayern?"
+    options: ["Serbien", "Bayern", "Etwa gleich viele"]
+    correct: 1
+    source: "Volkszählung Serbien 2022 (rund 6,6 Mio.); Bayerisches Landesamt für Statistik (rund 13,4 Mio.)"
+    timeout_s: 45
+    est_minutes: 2
+  - id: ende
+    type: end
+    title: "Sendeschluss"
+    est_minutes: 0

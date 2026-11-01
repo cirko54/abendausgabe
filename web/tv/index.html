@@ -1,0 +1,24 @@
+<!doctype html>
+<html lang="de">
+<head>
+  <meta charset="utf-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1">
+  <title>Abendausgabe</title>
+  <link rel="stylesheet" href="/shared/base.css">
+  <link rel="stylesheet" href="tv.css?v=2">
+</head>
+<body>
+  <div class="frame">
+    <main id="main" class="main"></main>
+    <aside class="side">
+      <p class="side-title">Heute</p>
+      <ol id="rundown" class="rundown"></ol>
+      <p id="remaining" class="remaining"></p>
+    </aside>
+  </div>
+  <p id="status" class="status"></p>
+  <!-- Für TV-Browser ohne Tastenereignisse (Cursor-Modus): klickbar mit dem Zeiger -->
+  <button id="next" class="next" type="button">Weiter</button>
+  <script src="tv.js?v=2"></script>
+</body>
+</html>

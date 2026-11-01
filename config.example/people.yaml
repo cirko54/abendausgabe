@@ -1,0 +1,23 @@
+# Personen des Haushalts. Beispiel; eigene Datei mit `abend init` anlegen.
+# Farben aus der Okabe-Ito-Palette (sicher bei Farbsehschwäche).
+# Rollen: admin (Programmregeln, Quellen, Personen) | member (eigenes Profil, Wünsche, Joker)
+people:
+  - id: alex
+    name: Alex
+    role: admin
+    color: "#E69F00"
+  - id: sam
+    name: Sam
+    role: admin
+    color: "#56B4E9"
+  - id: kim
+    name: Kim
+    role: member
+    color: "#009E73"
+  - id: robin
+    name: Robin
+    role: member
+    color: "#CC79A7"
+guest_color: "#F0E442"
+# Geräte-MACs für die Präsenz und Kalender-ICS-URLs gehören in eine
+# nicht committete Datei (people.local.yaml), nicht hierher.

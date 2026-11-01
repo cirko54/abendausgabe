@@ -1,0 +1,35 @@
+<!doctype html>
+<html lang="de">
+<head>
+  <meta charset="utf-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1">
+  <title>Abendausgabe – TV-Fähigkeitstest</title>
+  <link rel="stylesheet" href="/shared/base.css">
+  <style>
+    /* Absichtlich schlicht und ES5-kompatibel: Diese Seite muss auch auf schwachen TV-Browsern laufen. */
+    body { padding: 40px 60px; font-size: 26px; line-height: 1.4; }
+    h1 { font-size: 44px; margin: 0 0 10px; }
+    #step { font-size: 34px; margin: 20px 0; min-height: 50px; }
+    #log { list-style: none; padding: 0; margin: 0; }
+    #log li { margin: 4px 0; }
+    #log li.ok { color: #7ad9b8; }
+    #log li.fail { color: #ffb4a8; }
+    #log li.info { color: #9fb0c2; }
+    #media { margin: 16px 0; }
+    #media video, #media iframe { width: 480px; height: 270px; background: #000; }
+    #box { width: 60px; height: 60px; background: #56b4e9; margin: 20px 0 20px 320px; }
+    .verdict { font-size: 40px; font-weight: 700; margin-top: 20px; }
+    .muted { color: #9fb0c2; }
+  </style>
+</head>
+<body>
+  <h1>TV-Fähigkeitstest</h1>
+  <p class="muted">Prüft, ob dieser Fernseher die Abendausgabe direkt im Browser darstellen kann.</p>
+  <div id="step">OK auf der Fernbedienung drücken, um den Test zu starten.</div>
+  <div id="media"></div>
+  <div id="box" style="display:none"></div>
+  <ul id="log"></ul>
+  <div id="yt"></div>
+  <script src="check.js?v=3"></script>
+</body>
+</html>

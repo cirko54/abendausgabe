@@ -1,0 +1,24 @@
+.form { padding: 12px 0 40px; }
+.field { margin: 0 0 26px; }
+.field label, .field legend { display: block; font-weight: 700; margin-bottom: 6px; }
+.field .hint { color: var(--muted); font-size: 15px; margin: 0 0 8px; }
+fieldset { border: 0; padding: 0; margin: 0; }
+textarea, input[type="text"] {
+  width: 100%; box-sizing: border-box;
+  font: inherit; padding: 12px; border-radius: 12px;
+  border: 2px solid var(--line); background: var(--night); color: var(--text);
+}
+textarea { min-height: 96px; resize: vertical; }
+.rank { list-style: none; padding: 0; margin: 0; }
+.rank li {
+  display: flex; align-items: center; gap: 8px;
+  padding: 8px 10px; margin: 0 0 6px;
+  border: 1px solid var(--line); border-radius: 10px; background: var(--surface);
+}
+.rank li span { flex: 1; }
+.rank button { border: 1px solid var(--line); background: transparent; border-radius: 8px; padding: 6px 10px; }
+.range-labels { display: flex; justify-content: space-between; color: var(--muted); font-size: 15px; }
+.days { display: flex; flex-wrap: wrap; gap: 8px; }
+.days label, .radio label { font-weight: 400; display: flex; align-items: center; gap: 6px; }
+.radio label { margin: 0 0 8px; }
+input[type="checkbox"], input[type="radio"] { width: 22px; height: 22px; accent-color: var(--text); }

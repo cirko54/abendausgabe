@@ -1,0 +1,20 @@
+services:
+  app:
+    # Fertiges Image (amd64 und arm64). Wer selbst baut: ABEND_IMAGE in .env setzen.
+    image: ${ABEND_IMAGE:-ghcr.io/cirko54/abendausgabe:latest}
+    container_name: abendausgabe
+    restart: unless-stopped
+    mem_limit: 512m
+    ports:
+      - "8470:8470"
+    env_file:
+      - .env
+    environment:
+      - TZ=Europe/Berlin
+    volumes:
+      - abend-data:/data
+      # Eigene Konfiguration (abend init); fehlt eine Datei, gilt das Beispiel aus dem Image
+      - ./config:/app/config:ro
+
+volumes:
+  abend-data:

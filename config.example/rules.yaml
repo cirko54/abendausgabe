@@ -1,0 +1,14 @@
+# Programmregeln (SPEC §6). Änderbar nur in der Programmkonferenz, nie live.
+default:
+  target_minutes: 40
+  max_minutes: 55
+  think_block_every_minutes: 10
+  dessert_max: 1
+  dessert_requires_preceding_think_block: true
+  anchor: {module: tagesschau, at: "20:00"}
+solo:
+  target_minutes: 25
+  dessert_max: 1
+weekly:
+  last_week_tonight_slot: {weekday: mon}
+joker_per_person_per_week: 1

@@ -1,0 +1,19 @@
+.env
+data/
+.venv/
+__pycache__/
+*.py[cod]
+*.sqlite3*
+.pytest_cache/
+.mypy_cache/
+.ruff_cache/
+dist/
+build/
+.DS_Store
+android/build/
+
+# Haushaltsdaten liegen außerhalb des Repos (README: Eigene Instanz)
+/config
+/local.mk
+/android/keystore
+*.jks
