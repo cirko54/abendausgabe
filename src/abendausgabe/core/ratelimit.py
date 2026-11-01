@@ -35,6 +35,7 @@ _BUCKETS: dict[str, TokenBucket] = {
     "tagesschau": TokenBucket(capacity=60, per_seconds=3600),
     # MediathekViewWeb (Community-Projekt): sparsam, höchstens 30 pro Stunde
     "mediathekviewweb": TokenBucket(capacity=30, per_seconds=3600),
+    "ntfy": TokenBucket(capacity=30, per_seconds=3600),
 }
 
 

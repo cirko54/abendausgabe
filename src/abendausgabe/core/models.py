@@ -2,9 +2,9 @@
 
 from __future__ import annotations
 
-from datetime import UTC, datetime
+from datetime import UTC, date, datetime
 
-from sqlalchemy import DateTime, Integer, String, Text
+from sqlalchemy import Date, DateTime, Integer, String, Text, UniqueConstraint
 from sqlalchemy.orm import Mapped, mapped_column
 
 from abendausgabe.core.db import Base
@@ -75,3 +75,63 @@ class Interaction(Base):
     block_id: Mapped[str | None] = mapped_column(String(64), nullable=True)
     kind: Mapped[str] = mapped_column(String(32))
     payload_json: Mapped[str] = mapped_column(Text, default="{}")
+
+
+class QuizItem(Base):
+    """Eine Frage im Wiederholungspool (SPEC §8.6). Wortlaut und Optionen stammen aus der Quelle."""
+
+    __tablename__ = "quiz_item"
+    id: Mapped[str] = mapped_column(String(96), primary_key=True)
+    created_at: Mapped[datetime] = mapped_column(DateTime(timezone=True), default=utcnow)
+    aired_on: Mapped[date] = mapped_column(Date, index=True)
+    session_id: Mapped[str | None] = mapped_column(String(32), nullable=True, index=True)
+    question: Mapped[str] = mapped_column(Text)
+    options_json: Mapped[str] = mapped_column(Text)
+    correct: Mapped[int] = mapped_column(Integer)
+    source: Mapped[str] = mapped_column(String(300), default="")
+
+
+class ReviewState(Base):
+    """Leitner-Box einer Person für eine Frage; box 4 heißt gelernt (decisions.md Nr. 44)."""
+
+    __tablename__ = "review_state"
+    person_id: Mapped[str] = mapped_column(String(64), primary_key=True)
+    item_id: Mapped[str] = mapped_column(String(96), primary_key=True)
+    box: Mapped[int] = mapped_column(Integer)
+    due: Mapped[date | None] = mapped_column(Date, nullable=True, index=True)
+    last_correct: Mapped[int] = mapped_column(Integer, default=0)
+    updated_at: Mapped[datetime] = mapped_column(DateTime(timezone=True), default=utcnow)
+
+
+class MorningRating(Base):
+    """Morgen danach: Bewertung 1–5 und Abruffrage zu einer Sendung (SPEC §2)."""
+
+    __tablename__ = "morning_rating"
+    __table_args__ = (UniqueConstraint("person_id", "session_id"),)
+    id: Mapped[int] = mapped_column(Integer, primary_key=True, autoincrement=True)
+    person_id: Mapped[str] = mapped_column(String(64), index=True)
+    session_id: Mapped[str] = mapped_column(String(32), index=True)
+    rating: Mapped[int] = mapped_column(Integer)
+    item_id: Mapped[str | None] = mapped_column(String(96), nullable=True)
+    answer: Mapped[int | None] = mapped_column(Integer, nullable=True)
+    correct: Mapped[int | None] = mapped_column(Integer, nullable=True)
+    created_at: Mapped[datetime] = mapped_column(DateTime(timezone=True), default=utcnow)
+
+
+class PushTopic(Base):
+    """ntfy-Topic einer Person; freiwillig, im Profil eingeschaltet (decisions.md Nr. 46)."""
+
+    __tablename__ = "push_topic"
+    person_id: Mapped[str] = mapped_column(String(64), primary_key=True)
+    topic: Mapped[str] = mapped_column(String(64))
+    base_url: Mapped[str] = mapped_column(String(200))
+    created_at: Mapped[datetime] = mapped_column(DateTime(timezone=True), default=utcnow)
+
+
+class PushSent(Base):
+    """Verschickte Morgen-Nachricht, damit ein Neustart keine doppelten sendet."""
+
+    __tablename__ = "push_sent"
+    person_id: Mapped[str] = mapped_column(String(64), primary_key=True)
+    session_id: Mapped[str] = mapped_column(String(32), primary_key=True)
+    sent_at: Mapped[datetime] = mapped_column(DateTime(timezone=True), default=utcnow)

@@ -159,6 +159,62 @@
       '<button id="save" class="big primary">Speichern</button><p id="status" class="toast"></p></div>';
     schema.fields.forEach(function (f) { if (f.type === "rank") drawRank(f.id); });
     document.getElementById("save").addEventListener("click", save);
+    const pushBox = document.createElement("div");
+    pushBox.id = "push";
+    pushBox.className = "form push";
+    app.appendChild(pushBox);
+    loadPush();
+  }
+
+  // ------------------------------------------------ Morgenfrage per ntfy (decisions.md Nr. 46)
+
+  async function loadPush() {
+    try {
+      drawPush(await api("GET", "/api/push"));
+    } catch (e) {
+      document.getElementById("push").innerHTML = '<p class="error">' + esc(e.message) + "</p>";
+    }
+  }
+
+  function drawPush(view) {
+    const box = document.getElementById("push");
+    const when = view.time ? "um " + esc(view.time) + " Uhr" : "morgens";
+    let html = "<h2>Morgenfrage aufs Handy</h2>";
+    if (!view.enabled) {
+      html +=
+        '<p class="muted">Am Morgen nach einer Sendung kommt ' + when + " eine Nachricht: " +
+        "kurz bewerten und eine Frage vom Vorabend beantworten. Ohne Push wartet die Frage hier unter /c/.</p>" +
+        '<p class="hint">Die Nachricht läuft über die App ntfy und den Dienst ' + esc(view.server) +
+        ". Sie enthält keine Namen und keine Inhalte.</p>" +
+        '<button class="big" data-push="on">Einschalten</button>';
+    } else {
+      html +=
+        '<p class="muted">Eingeschaltet. Die Nachricht kommt ' + when + ", wenn du am Vorabend dabei warst.</p>" +
+        "<ol class=\"steps\"><li>App ntfy installieren (Play Store, F-Droid oder App Store).</li>" +
+        '<li><a class="big" href="' + esc(view.app) + '">In ntfy abonnieren</a>' +
+        '<span class="hint">Klappt der Knopf nicht: in ntfy „Thema abonnieren“ wählen und diese Adresse eintragen:</span>' +
+        '<input type="text" readonly value="' + esc(view.web) + '"></li>' +
+        "<li>Testnachricht schicken und prüfen, ob sie ankommt.</li></ol>" +
+        '<button class="big" data-push="test">Testnachricht senden</button>' +
+        '<button class="big" data-push="off">Ausschalten</button>';
+    }
+    box.innerHTML = html + '<p id="push-status" class="toast"></p>';
+    box.querySelectorAll("[data-push]").forEach(function (btn) {
+      btn.addEventListener("click", async function () {
+        const act = btn.getAttribute("data-push");
+        const status = document.getElementById("push-status");
+        try {
+          if (act === "on") drawPush(await api("POST", "/api/push"));
+          else if (act === "off") drawPush(await api("DELETE", "/api/push"));
+          else {
+            await api("POST", "/api/push/test");
+            status.textContent = "Verschickt. Kommt nichts an, das Abo in ntfy prüfen.";
+          }
+        } catch (e) {
+          status.textContent = e.message;
+        }
+      });
+    });
   }
 
   init();

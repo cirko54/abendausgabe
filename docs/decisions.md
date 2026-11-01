@@ -201,3 +201,31 @@ Offen für Phase 1: TV-Ergebnis hier eintragen, Router-Typ (Präsenz), Kalenderq
     Entscheidung (b): Der tagesschau24-Stream hält zwei Stunden vor (3600 Segmente à 2 s mit EXT-X-PROGRAM-DATE-TIME). Die Reihenfolge ist deshalb: (1) die veröffentlichte Aufzeichnung von heute; (2) sonst ab 19:58 bis 100 Minuten nach Beginn der Livestream. Nach Beginn springt hls.js an den Sendebeginn, bei 20:08 also zeitversetzt von vorn, und hält am Sendeende an, statt ins nächste tagesschau24-Programm zu laufen (kein Autoplay). (3) Sonst kommen die neuesten 100 Sekunden. Für Anfang und Ende braucht es die Sendezeit je Segment, deshalb nimmt tv.js für den Livestream hls.js statt des nativen Players; der native Weg bleibt Rückfall mit geschätzter Position.
     Geprüft im Headless-Chrome um 20:40: Der Sprung landet auf 0,0 s genau beim Sendebeginn (Gong), der Videoblock ist Vollbild, die Leiste blendet aus.
     Offen: Wann die Aufzeichnung erscheint (bisher geschätzt 20:20 bis 20:30), Test der Halt-Logik am echten Sendeende, Test am Fernseher mit hls.js. Vor 19:58 gibt es weiterhin nur die 100 Sekunden; eine frühere Ausgabe (z. B. 17 Uhr) führt der Endpunkt `channels` nicht.
+
+## 2026-11-02 – Abnahme Schritt 2
+
+43. Abgenommen: Am Fernseher läuft die tagesschau im Vollbild, auch zeitversetzt von vorn (Rückmeldung des Haushalts am 1.11. abends). Offen bleiben nur Beobachtungen: wann die Aufzeichnung erscheint, und ob die Halt-Logik am echten Sendeende greift.
+
+## 2026-11-02 – Plan Phase 1, Schritt 3: Wiederholung und Morgen danach
+
+44. Fragenpool und Leitner (SPEC §8.6). Neue Tabellen `quiz_item` (Frage, Optionen, richtige Antwort, Quelle, Sendetag) und `review_state` (Person, Frage, Box, fällig am). Ablauf je Person:
+    - Erste Begegnung (in der Sendung oder morgens): Box 1, fällig nach 3 Tagen, egal ob richtig.
+    - Richtig bei Fälligkeit: Box 2 (10 Tage), dann Box 3 (30 Tage), danach gilt die Frage als gelernt und kommt nicht wieder.
+    - Falsch: zurück in Box 1, fällig nach 3 Tagen.
+    - Wer eine Wiederholungsfrage beantwortet, obwohl sie für ihn noch nicht fällig ist, rückt nicht vor (Abstand ist der Sinn). Falsch setzt trotzdem zurück.
+    Die Wiederholung kommt als eigene Auswahlblöcke vor dem Sendeschluss: höchstens 2 Fragen, die für die meisten Anwesenden fällig sind, die ältesten zuerst. Gewählt wird beim Sendestart, wenn feststeht, wer da ist. Die Room-Logik bleibt rein; Fragen anlegen und Boxen fortschreiben macht der RoomManager beim Persistieren der Auflösung.
+    Woher die Fragen kommen, solange es kein LLM gibt: die Aufmacher-Frage zur 20-Uhr-tagesschau, wörtlich aus der Themenliste (Nr. 37). Lief in der Sendung die tagesschau, ohne dass die Vorab-Frage möglich war (Start vor Erscheinen der Aufzeichnung, Nr. 42), legt der Server die Frage am nächsten Morgen nach: Die API führt die 20-Uhr-Ausgabe bis zum nächsten Abend.
+    **Annahme:** Das Abschlussquiz mit 3–5 Fragen aus der heutigen Sendung (SPEC §8.6) braucht Fragen zum Inhalt, also das LLM mit Faktenprüfung. Es kommt mit der Redaktion in Schritt 4 (tagesschau-`edit.py` neben der Paper-Wette). Schritt 3 baut Pool, Leitner, Wiederholungsblöcke und den Morgen danach.
+
+45. Morgen danach (SPEC §2, §8.6). Auf dem Handy unter /c/ eine Karte „Wie war die Abendausgabe gestern?“ mit Bewertung 1–5 und einer Abruffrage. Die Auflösung kommt erst nach der Antwort. Gezeigt wird die Karte jeder Person, die bei der letzten Sendung dabei war, bis zur nächsten Sendung. Wer morgens nicht antwortet, sieht sie abends beim Einchecken noch einmal. Neue Tabelle `morning_rating`.
+    Die Abruffrage ist eine Frage aus der Sendung von gestern, sonst eine fällige Wiederholung. Sie zählt als Begegnung bzw. Wiederholung nach Nr. 44: Richtig rückt nur vor, wenn die Frage fällig war; falsch setzt zurück.
+
+46. Push: ntfy, Variante „ntfy.sh mit zufälligem Topic und minimalem Inhalt“ (SPEC §11.4). **Annahme**, bitte bestätigen.
+    - Pro Person freiwillig: Im Profil (/p/) schaltet jede Person die Morgenfrage selbst ein. Der Server erzeugt ein zufälliges Topic (128 Bit) und zeigt einen Link bzw. QR-Code für die ntfy-App (Android, iOS) sowie eine Testnachricht.
+    - Um 08:30 (`ABEND_MORNING_PUSH`) geht an jede Person, die gestern dabei war und noch nicht geantwortet hat, genau eine Nachricht: „Wie war die Abendausgabe gestern? Eine Frage wartet.“ Die Nachricht enthält keine Namen und keine Inhalte. Sie verlinkt auf die LAN-Adresse des Servers; die Adresse merkt sich der Server beim Einschalten. Versandte Nachrichten werden in der Datenbank vermerkt, damit ein Neustart keine doppelten verschickt.
+    - Ein eigener ntfy-Server geht über `ABEND_NTFY_URL` (Voreinstellung https://ntfy.sh).
+    - Grund: ntfy.sh braucht keinen weiteren Container, keinen Reverse Proxy und keine Freigabe nach außen. ntfy.sh sieht nur ein zufälliges Topic, den festen Text und eine private IP-Adresse.
+    - Verworfen für jetzt: ntfy selbst hosten (zweiter Container, Reverse Proxy mit Auth, für iOS upstream-base-url); Web Push (braucht HTTPS und einen Service Worker, im LAN über http nicht möglich).
+    - Folge: Die Antwortseite liegt im LAN. Von unterwegs öffnet der Link nichts; die Karte wartet dann bis zum Abend (Nr. 45). /ext/morning kommt mit der internetfähigen Instanz (Nr. 22).
+    Planer: eine schlanke asyncio-Schleife im Server, die einmal pro Minute prüft. APScheduler (CLAUDE.md, Stack) bleibt draußen, bis mehrere zeitgesteuerte Aufgaben ihn rechtfertigen; keine neue Abhängigkeit.
+    Abnahme Schritt 3 (Nr. 23): Eine echte Sendung mit tagesschau; am nächsten Morgen kommt der Push, und Bewertung und Abruffrage landen in der Datenbank. Nach 3 Tagen erscheint die Frage als Wiederholung.

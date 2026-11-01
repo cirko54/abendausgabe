@@ -48,3 +48,15 @@ input[type="range"] { width: 100%; height: 44px; accent-color: var(--text); }
 body.rest { background: #000; }
 body.rest .app { justify-content: center; align-items: center; color: #3a4a5c; }
 .rest-text { font-size: 18px; text-align: center; }
+
+/* Morgen danach */
+.stars { display: flex; gap: 8px; margin: 8px 0 2px; }
+.star {
+  flex: 1; padding: 16px 0; font-size: 22px; font-weight: 700;
+  border: 2px solid var(--line); border-radius: 12px; background: var(--surface); color: var(--text);
+}
+.star.on { background: var(--text); color: var(--night); border-color: var(--text); }
+.range-labels { display: flex; justify-content: space-between; color: var(--muted); font-size: 14px; }
+h2.recall { font-size: 21px; line-height: 1.25; margin: 26px 0 4px; }
+.big.picked { border-color: var(--text); }
+.small-value { font-size: 24px; }

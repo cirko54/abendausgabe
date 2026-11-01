@@ -14,6 +14,7 @@ from typing import Any
 import httpx
 
 from abendausgabe.core import ratelimit
+from abendausgabe.core.dates import BERLIN, date_de
 from abendausgabe.modules.tagesschau import block as ts_block
 from abendausgabe.modules.tagesschau import fetch as ts_fetch
 from abendausgabe.modules.wetter_himmel import block as wetter_block
@@ -23,16 +24,8 @@ from abendausgabe.session.rundown import validate_rundown
 log = logging.getLogger(__name__)
 
 SOURCE_ERRORS = (httpx.HTTPError, ratelimit.RateLimitedError, ValueError, KeyError, TypeError)
-WEEKDAYS = ["Montag", "Dienstag", "Mittwoch", "Donnerstag", "Freitag", "Samstag", "Sonntag"]
-MONTHS = [
-    "Januar", "Februar", "März", "April", "Mai", "Juni",
-    "Juli", "August", "September", "Oktober", "November", "Dezember",
-]  # fmt: skip
-
-
 def _date_de(now: datetime) -> str:
-    local = now.astimezone(ts_block.BERLIN)
-    return f"{WEEKDAYS[local.weekday()]}, {local.day}. {MONTHS[local.month - 1]}"
+    return date_de(now.astimezone(BERLIN).date())
 
 
 async def build_program(now: datetime) -> list[dict[str, Any]]:

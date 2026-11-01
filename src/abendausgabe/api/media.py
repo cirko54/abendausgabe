@@ -8,6 +8,7 @@ from typing import Any
 from fastapi import APIRouter, HTTPException
 
 from abendausgabe.assembly.notausgabe import SOURCE_ERRORS
+from abendausgabe.core.dates import BERLIN
 from abendausgabe.modules.tagesschau import block as ts_block
 from abendausgabe.modules.tagesschau import fetch as ts_fetch
 
@@ -22,7 +23,7 @@ async def resolve(name: str) -> dict[str, Any]:
         broadcasts = ts_block.parse_channels(await ts_fetch.channels())
     except SOURCE_ERRORS as exc:
         return {"media": None, "error": f"tagesschau nicht erreichbar ({type(exc).__name__})."}
-    media = ts_block.choose_media(broadcasts, datetime.now(ts_block.BERLIN))
+    media = ts_block.choose_media(broadcasts, datetime.now(BERLIN))
     if media is None:
         return {"media": None, "error": "Heute gibt es noch keine tagesschau-Aufzeichnung."}
     return {"media": media, "error": None}

@@ -8,12 +8,15 @@ import json
 import logging
 import time
 from collections.abc import Awaitable, Callable
+from datetime import datetime
 from typing import Any
 
 from fastapi import WebSocket
 
+from abendausgabe.core.dates import BERLIN
 from abendausgabe.core.db import Database
 from abendausgabe.core.models import Interaction, SessionRecord, utcnow
+from abendausgabe.learning import pool
 from abendausgabe.session.room import Room
 
 log = logging.getLogger(__name__)
@@ -79,7 +82,26 @@ class RoomManager:
         """OK bzw. „Weiter“. Vor dem Sendestart wird der Ablauf aufgefrischt."""
         if self.room.phase == "lobby":
             await self.refresh_program()
+            await self.handle(self._add_reviews)
         return await self.handle(lambda: self.room.advance(time.monotonic()))
+
+    def _add_reviews(self) -> bool:
+        """Fällige Wiederholungen für die Anwesenden vor den Sendeschluss (decisions.md Nr. 44)."""
+        if self.room.phase != "lobby" or not self.room.present_ids:
+            return False
+        planned = {
+            str(b["quiz_item"]["id"])
+            for b in self.room.rundown
+            if isinstance(b.get("quiz_item"), dict) and not str(b["id"]).startswith("wiederholung-")
+        }
+        try:
+            reviews = pool.review_blocks(
+                self.db, self.room.present_ids, datetime.now(BERLIN).date(), planned
+            )
+        except Exception:  # Wiederholung ist Zugabe; die Sendung startet trotzdem
+            log.exception("Wiederholungen konnten nicht geladen werden.")
+            return False
+        return self.room.set_rundown(pool.with_reviews(self.room.rundown, reviews))
 
     async def handle(self, action: Callable[[], bool]) -> bool:
         """Führt eine Room-Aktion aus, persistiert Ereignisse, sendet bei Änderung."""
@@ -122,6 +144,18 @@ class RoomManager:
                     if record is not None:
                         record.ended_at = utcnow()
             s.commit()
+        for ev in events:
+            if ev.kind == "reveal":
+                self._record_quiz(ev.block_id, ev.payload.get("answers", {}), session_id)
+
+    def _record_quiz(self, block_id: str | None, answers: Any, session_id: str | None) -> None:
+        block = next((b for b in self.room.rundown if b["id"] == block_id), None)
+        if block is None or not isinstance(answers, dict):
+            return
+        try:
+            pool.record_reveal(self.db, block, answers, session_id, datetime.now(BERLIN).date())
+        except Exception:  # Fragenpool darf die Sendung nie aufhalten
+            log.exception("Quizantwort für %s nicht gespeichert.", block_id)
 
     async def _broadcast(self) -> None:
         now = time.monotonic()

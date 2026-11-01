@@ -22,3 +22,11 @@ textarea { min-height: 96px; resize: vertical; }
 .days label, .radio label { font-weight: 400; display: flex; align-items: center; gap: 6px; }
 .radio label { margin: 0 0 8px; }
 input[type="checkbox"], input[type="radio"] { width: 22px; height: 22px; accent-color: var(--text); }
+
+.push { margin-top: 32px; padding-top: 8px; border-top: 1px solid var(--line); }
+.push h2 { font-size: 22px; margin: 16px 0 8px; }
+.push .steps { padding-left: 20px; }
+.push .steps li { margin: 10px 0; }
+.push .steps .big { box-sizing: border-box; text-align: center; text-decoration: none; color: var(--text); }
+.push input[type="text"] { width: 100%; box-sizing: border-box; font-size: 14px; }
+.push .hint { display: block; color: var(--muted); font-size: 15px; margin: 6px 0; }

@@ -34,7 +34,7 @@ Jeder Docker-Host im Heimnetz (amd64 oder arm64). Referenzinstallation, an der d
 - Frontend: in Phase 0 Vanilla-JS ohne Build (docs/decisions.md Nr. 1). Svelte 5 und Vite erst nach dem TV-Test neu bewerten.
   - Controller-Karte (ab Phase 1): MapLibre GL mit lokaler PMTiles-Datei.
   - TV-Karte (ab Phase 1): serverseitig projizierte SVG-Karte (Natural Earth).
-- Push: ntfy (Variante gemäß SPEC §11.4).
+- Push: ntfy, Variante ntfy.sh mit zufälligem Topic (docs/decisions.md Nr. 46); Planer als asyncio-Schleife im Server.
 - Qualität:
   - pytest; Tests nutzen aufgezeichnete Antworten unter tests/fixtures, keine Live-Calls
   - ruff, mypy (strict für core und session)
@@ -51,7 +51,7 @@ src/abendausgabe/
   modules/<name>/  fetch.py, edit.py, block.py
   audience/    (Phase 1) Kalender (ICS), Präsenz-Adapter
   assembly/    (Phase 1) Assembler, Regeln, Notausgabe
-  learning/    (Phase 2) Glicko, Leitner, Interessenmodell
+  learning/    Leitner, Fragenpool, Morgen danach; ab Phase 2 Glicko, Interessenmodell
   api/         HTTP- und WebSocket-Routen, /ext-Routen
   redaktion/   Worker-Einstieg für den Mac
 prompts/<module>/<name>.md

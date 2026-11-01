@@ -5,6 +5,7 @@ from __future__ import annotations
 import logging
 import os
 from dataclasses import dataclass
+from datetime import time
 from functools import lru_cache
 from pathlib import Path
 from typing import Any
@@ -38,6 +39,8 @@ class Settings:
     youtube_test_id: str
     cookie_secure: bool
     program: str  # heute | test
+    ntfy_url: str
+    morning_push: time | None  # None: kein Morgen-Push
 
 
 @lru_cache
@@ -51,7 +54,18 @@ def get_settings() -> Settings:
         youtube_test_id=os.environ.get("ABEND_YOUTUBE_TEST_ID", "jNQXAC9IVRw"),
         cookie_secure=_env_bool("ABEND_COOKIE_SECURE", False),
         program=os.environ.get("ABEND_PROGRAM", "heute").strip().lower(),
+        ntfy_url=os.environ.get("ABEND_NTFY_URL", "https://ntfy.sh").strip().rstrip("/"),
+        morning_push=_env_time("ABEND_MORNING_PUSH", "08:30"),
     )
+
+
+def _env_time(name: str, default: str) -> time | None:
+    """Uhrzeit HH:MM; leer oder „aus“ schaltet ab."""
+    value = os.environ.get(name, default).strip().lower()
+    if value in {"", "aus", "off", "0"}:
+        return None
+    hour, _, minute = value.partition(":")
+    return time(int(hour), int(minute or 0))
 
 
 def config_path(name: str) -> Path:

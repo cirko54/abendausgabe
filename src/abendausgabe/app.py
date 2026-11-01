@@ -14,12 +14,13 @@ from fastapi.responses import RedirectResponse
 from fastapi.staticfiles import StaticFiles
 
 from abendausgabe import __version__
-from abendausgabe.api import devices, media, profile, qr, tvcheck, ws
+from abendausgabe.api import devices, media, morning, profile, qr, tvcheck, ws
 from abendausgabe.assembly.notausgabe import build_program
-from abendausgabe.core.config import get_people, get_settings
+from abendausgabe.core.config import Settings, get_people, get_settings
+from abendausgabe.core.dates import BERLIN
 from abendausgabe.core.db import Database
 from abendausgabe.core.security import AttemptLimiter
-from abendausgabe.modules.tagesschau.block import BERLIN
+from abendausgabe.learning.morning import morning_job
 from abendausgabe.session.manager import ProgramBuilder, RoomManager
 from abendausgabe.session.room import Room
 from abendausgabe.session.rundown import load_rundown
@@ -42,6 +43,17 @@ def _setup_logging() -> None:
         logger.addHandler(handler)
         logger.setLevel(logging.INFO)
         logger.propagate = False
+
+
+async def _morning_loop(db: Database, settings: Settings) -> None:
+    """Einmal pro Minute: Morgen-Push fällig? (decisions.md Nr. 46, ohne APScheduler)"""
+    log = logging.getLogger("abendausgabe.morning")
+    while True:
+        try:
+            await morning_job(db, settings, datetime.now(BERLIN))
+        except Exception:
+            log.exception("Morgen-Push-Lauf fehlgeschlagen.")
+        await asyncio.sleep(60)
 
 
 def create_app() -> FastAPI:
@@ -72,8 +84,10 @@ def create_app() -> FastAPI:
     async def lifespan(_app: FastAPI) -> AsyncIterator[None]:
         await manager.start()
         warmup = asyncio.create_task(manager.refresh_program())
+        planner = asyncio.create_task(_morning_loop(db, settings))
         yield
         warmup.cancel()
+        planner.cancel()
         await manager.stop()
 
     app = FastAPI(title="Abendausgabe", version=__version__, lifespan=lifespan)
@@ -83,7 +97,15 @@ def create_app() -> FastAPI:
     app.state.manager = manager
     app.state.pin_limiter = AttemptLimiter()
 
-    routers = (devices.router, profile.router, tvcheck.router, qr.router, media.router, ws.router)
+    routers = (
+        devices.router,
+        profile.router,
+        tvcheck.router,
+        qr.router,
+        media.router,
+        morning.router,
+        ws.router,
+    )
     for router in routers:
         app.include_router(router)
 

@@ -14,6 +14,8 @@
   let sliderPos = SLIDER_STEPS / 2;
   let sliderTouched = false;
   let toastTimer = null;
+  // Morgen danach (decisions.md Nr. 45): { card, rating, answer, result } oder null
+  let morning = null;
 
   function esc(value) {
     return String(value == null ? "" : value)
@@ -106,6 +108,7 @@
     try {
       me = await api("POST", "/api/devices", { person_id: personId, pin: pin });
       connect();
+      loadMorning();
     } catch (e) {
       const err = document.getElementById("err");
       if (err) err.textContent = e.message;
@@ -145,7 +148,9 @@
 
   // Aufgewacht oder zurück im Browser: Verbindung sofort erneuern.
   document.addEventListener("visibilitychange", function () {
-    if (document.visibilityState === "visible" && me && !ws) connect();
+    if (document.visibilityState !== "visible" || !me) return;
+    if (!ws) connect();
+    if (!morning) loadMorning();
   });
 
   function send(message) {
@@ -158,6 +163,99 @@
     el.textContent = text;
     clearTimeout(toastTimer);
     toastTimer = setTimeout(function () { el.textContent = ""; }, 2000);
+  }
+
+  // --------------------------------------------------------- Morgen danach
+
+  async function loadMorning() {
+    if (!me || me.role === "guest") return;
+    try {
+      const data = await api("GET", "/api/morning");
+      morning = data.card ? { card: data.card, rating: null, answer: null, result: null } : null;
+    } catch (e) {
+      morning = null;
+    }
+    renderKey = "";
+    render();
+  }
+
+  function morningVisible() {
+    return !!morning && (!state || state.phase !== "block");
+  }
+
+  function morningHtml() {
+    const card = morning.card;
+    const q = card.question;
+    if (morning.result) {
+      const r = morning.result.question;
+      let html = "<h1>Danke.</h1>";
+      if (r) {
+        html += r.correct
+          ? '<p class="value">Richtig.</p>'
+          : '<p class="muted">Nicht ganz. Richtig ist:</p><p class="value small-value">' + esc(r.answer) + "</p>";
+        if (r.source) html += '<p class="muted">Quelle: ' + esc(r.source) + "</p>";
+      }
+      return html + '<button class="big primary" data-morning="done">Fertig</button>';
+    }
+    let html =
+      '<p class="muted">Morgen danach · ' + esc(card.day) + "</p>" +
+      "<h1>Wie war die Abendausgabe gestern?</h1>" +
+      '<div class="stars">' +
+      [1, 2, 3, 4, 5].map(function (n) {
+        return '<button class="star' + (morning.rating === n ? " on" : "") + '" data-rating="' + n + '">' + n + "</button>";
+      }).join("") +
+      '</div><div class="range-labels"><span>gar nicht</span><span>sehr</span></div>';
+    if (q) {
+      html += '<h2 class="recall">' + esc(q.question) + "</h2>" +
+        q.options.map(function (o, i) {
+          return '<button class="big' + (morning.answer === i ? " picked" : "") + '" data-recall="' + i + '">' + esc(o) + "</button>";
+        }).join("");
+    }
+    const ready = morning.rating && (!q || morning.answer !== null);
+    return html +
+      '<button class="big primary" data-morning="send"' + (ready ? "" : " disabled") + ">Absenden</button>" +
+      '<p id="err" class="error"></p>' +
+      '<button class="small" data-morning="later">Später</button>';
+  }
+
+  async function sendMorning() {
+    try {
+      morning.result = await api("POST", "/api/morning", {
+        session_id: morning.card.session_id,
+        rating: morning.rating,
+        answer: morning.answer,
+      });
+      draw();
+    } catch (e) {
+      const err = document.getElementById("err");
+      if (err) err.textContent = e.message;
+    }
+  }
+
+  function bindMorning() {
+    app.querySelectorAll("[data-rating]").forEach(function (el) {
+      el.addEventListener("click", function () {
+        morning.rating = Number(el.getAttribute("data-rating"));
+        draw();
+      });
+    });
+    app.querySelectorAll("[data-recall]").forEach(function (el) {
+      el.addEventListener("click", function () {
+        morning.answer = Number(el.getAttribute("data-recall"));
+        draw();
+      });
+    });
+    app.querySelectorAll("[data-morning]").forEach(function (el) {
+      el.addEventListener("click", function () {
+        const act = el.getAttribute("data-morning");
+        if (act === "send") sendMorning();
+        else {
+          morning = null; // „Später“: abends beim Einchecken kommt die Karte wieder
+          renderKey = "";
+          render();
+        }
+      });
+    });
   }
 
   // ------------------------------------------------------------ Darstellung
@@ -255,10 +353,15 @@
   }
 
   function render() {
-    if (!state || !me) return;
+    if (!me) return;
+    if (!state) {
+      if (morningVisible()) draw();
+      return;
+    }
     const you = state.you || {};
     const key = [
       state.phase, state.block_index, state.block_phase, you.present, you.answered, you.points,
+      morningVisible(),
     ].join(":");
     if (key === renderKey) return; // nichts Relevantes geändert: Eingaben nicht zerstören
     const isNewQuestion = state.block_phase === "ask" && !you.answered;
@@ -282,10 +385,17 @@
       return;
     }
     document.body.classList.remove("rest");
-    app.innerHTML =
+    const top =
       '<div class="top"><span class="dot" style="background:' + esc(me.color) + '"></span>' +
-      esc(me.name) + "</div>" +
-      '<div class="body">' + bodyHtml() + '<p id="toast" class="toast"></p></div>' + footHtml();
+      esc(me.name) + "</div>";
+    if (morningVisible()) {
+      app.innerHTML = top + '<div class="body">' + morningHtml() + "</div>";
+      bindMorning();
+      return;
+    }
+    app.innerHTML =
+      top + '<div class="body">' + bodyHtml() + '<p id="toast" class="toast"></p></div>' +
+      (state ? footHtml() : "");
     bind();
   }
 
@@ -345,9 +455,11 @@
   (async function init() {
     try {
       me = await api("GET", "/api/me");
-      connect();
     } catch (e) {
       showChooser();
+      return;
     }
+    connect();
+    loadMorning();
   })();
 })();

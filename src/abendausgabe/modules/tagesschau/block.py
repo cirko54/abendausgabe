@@ -9,9 +9,9 @@ import random
 from dataclasses import dataclass, field
 from datetime import datetime, time, timedelta
 from typing import Any
-from zoneinfo import ZoneInfo
 
-BERLIN = ZoneInfo("Europe/Berlin")
+from abendausgabe.core.dates import BERLIN, date_de
+
 LIVE_START = time(19, 58)
 BROADCAST_START = time(20, 0)
 BROADCAST_SECONDS = 900
@@ -204,8 +204,23 @@ def aufmacher_question(broadcasts: list[Broadcast], now: datetime) -> dict[str, 
         "options": options,
         "correct": options.index(lead),
         "source": "tagesschau, 20 Uhr: Themen der Sendung",
+        # Für die Wiederholung (decisions.md Nr. 44): dieselbe Frage, später mit Datum
+        "quiz_item": aufmacher_item_spec(today),
         "timeout_s": 45,
         "est_minutes": 1,
+    }
+
+
+def aufmacher_item_id(day: Any) -> str:
+    return f"tagesschau-aufmacher-{day.isoformat()}"
+
+
+def aufmacher_item_spec(broadcast: Broadcast) -> dict[str, Any]:
+    day = (broadcast.date or datetime.now(BERLIN)).astimezone(BERLIN).date()
+    return {
+        "id": aufmacher_item_id(day),
+        "question": f"Womit machte die tagesschau am {date_de(day)} auf?",
+        "aired_on": day.isoformat(),
     }
 
 

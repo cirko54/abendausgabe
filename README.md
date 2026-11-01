@@ -99,6 +99,12 @@ Einmalig:
 
 Danach bei jeder Änderung `make deploy-nas`, Log mit `make logs-nas`. Wer von einem lokalen Testbetrieb umzieht, übernimmt PINs und Testberichte einmalig mit `make migrate-db-nas`.
 
+## Morgen danach
+
+Am Morgen nach einer Sendung fragt das Handy unter `/c/`: Wie war es gestern (1–5)? Dazu kommt eine Frage zum Vorabend. Die Antworten sind die wichtigste Messgröße der Abendausgabe; Verweildauer zählt nicht. Fragen kommen nach 3, 10 und 30 Tagen als Wiederholung zurück, am Ende der Sendung.
+
+Wer eine Erinnerung will, schaltet sie im Profil (`/p/`) ein und abonniert das angezeigte Thema in der App [ntfy](https://ntfy.sh). Um 08:30 (`ABEND_MORNING_PUSH`) kommt dann eine Nachricht ohne Namen und ohne Inhalte. Der Link darin öffnet die Seite nur im Heimnetz; von unterwegs wartet die Frage bis zum Abend. Ein eigener ntfy-Server geht über `ABEND_NTFY_URL`.
+
 ## Handy erreicht die Seite nicht
 
 Erst `http://<Server-IP>:8470/healthz` im Handy-Browser öffnen. Kommt keine Antwort:
@@ -121,7 +127,7 @@ Löscht PIN und Geräte dieser Person; bei der nächsten Anmeldung wird eine neu
 
 ## Privatsphäre
 
-Alles bleibt im Heimnetz. Ausnahmen sind die Abrufe bei den Quellen, optional das LLM und die später vorgesehenen Routen unter `/ext` (Foto-Upload, Morgen-danach-Frage über HTTPS mit Token pro Person). Profilantworten haben eine Sichtbarkeit (nur ich / Admins / alle). Wer Admin-Zugriff auf den Server hat, kann die Datenbank technisch trotzdem lesen; das sollte man im Haushalt offen sagen.
+Alles bleibt im Heimnetz. Ausnahmen sind die Abrufe bei den Quellen, die freiwillige Morgen-Erinnerung über ntfy (zufälliges Thema, fester Text), optional das LLM und die später vorgesehenen Routen unter `/ext` (Foto-Upload, Morgen-danach-Frage über HTTPS mit Token pro Person). Profilantworten haben eine Sichtbarkeit (nur ich / Admins / alle). Wer Admin-Zugriff auf den Server hat, kann die Datenbank technisch trotzdem lesen; das sollte man im Haushalt offen sagen.
 
 ## Lizenz
 
