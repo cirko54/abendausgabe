@@ -41,12 +41,40 @@ def test_parse_classifies_broadcasts() -> None:
 
 
 def test_live_window_uses_hls_stream() -> None:
-    media = tb.choose_media(BROADCASTS, at(1, 20, 3, month=11))
+    media = tb.choose_media(BROADCASTS, at(1, 19, 59, month=11))
     assert media is not None
     assert media["format"] == "hls" and media["live"] is True
     assert media["src"].endswith(".m3u8")
+    assert media["start_at"] is None  # vor 20 Uhr: an der Live-Kante einsteigen
+    assert media["end_at"] == at(1, 20, 15, month=11).timestamp()
     # Rückfall, falls hls.js scheitert: die 100 Sekunden von heute
     assert media["fallback_src"] and media["fallback_src"].endswith(".mp4")
+
+
+def test_late_start_rewinds_to_beginning_of_broadcast() -> None:
+    media = tb.choose_media(BROADCASTS, at(1, 21, 30, month=11))
+    assert media is not None and media["format"] == "hls"
+    assert media["live"] is False and "zeitversetzt" in media["title"]
+    assert media["start_at"] == at(1, 20, 0, month=11).timestamp()
+    assert media["duration_s"] == 900
+    # Anfang fällt bald aus dem Zwei-Stunden-Fenster: dann die Kurzfassung
+    late = tb.choose_media(BROADCASTS, at(1, 21, 45, month=11))
+    assert late is not None and late["title"].startswith("tagesschau in 100 Sekunden")
+
+
+def test_current_broadcast_entry_sets_exact_window() -> None:
+    start = int(at(1, 19, 59, month=11).timestamp()) + 57
+    current = {
+        "title": "Aktuelle Sendung: Tagesschau 20 Uhr",
+        "streams": {"adaptivestreaming": "https://live.example/master.m3u8"},
+        "start": start,
+        "end": start + 903,
+    }
+    data = {"channels": [current, *CHANNELS["channels"]]}
+    media = tb.choose_media(tb.parse_channels(data), at(1, 20, 5, month=11))
+    assert media is not None
+    assert media["start_at"] == start and media["end_at"] == start + 903
+    assert media["src"] == "https://live.example/master.m3u8"
 
 
 def test_after_broadcast_uses_todays_20uhr_recording() -> None:

@@ -7,13 +7,17 @@ from __future__ import annotations
 
 import random
 from dataclasses import dataclass, field
-from datetime import datetime, time
+from datetime import datetime, time, timedelta
 from typing import Any
 from zoneinfo import ZoneInfo
 
 BERLIN = ZoneInfo("Europe/Berlin")
 LIVE_START = time(19, 58)
-LIVE_END = time(20, 16)
+BROADCAST_START = time(20, 0)
+BROADCAST_SECONDS = 900
+# tagesschau24 hält im Livestream zwei Stunden vor (EXT-X-PROGRAM-DATE-TIME, decisions.md Nr. 42).
+# Zeitversetzt starten, solange der Anfang sicher noch im Fenster liegt.
+TIMESHIFT_LIMIT = timedelta(minutes=100)
 ATTRIBUTION = "tagesschau (ARD-aktuell)"
 MAX_OPTION_CHARS = 110
 
@@ -28,6 +32,8 @@ class Broadcast:
     hls: str | None
     duration_s: int | None
     topics: list[str] = field(default_factory=list)
+    start: int | None = None  # Unix-Zeit, nur bei „Aktuelle Sendung“
+    end: int | None = None
 
 
 def _kind(channel: dict[str, Any]) -> str:
@@ -36,6 +42,8 @@ def _kind(channel: dict[str, Any]) -> str:
     sids = " ".join(str(t.get("sid", "")) for t in tracking if isinstance(t, dict))
     if title.startswith("Im Livestream"):
         return "live"
+    if title.startswith("Aktuelle Sendung") and "20 Uhr" in title:
+        return "live20"
     if "tagesschau_20_uhr" in sids:
         return "20uhr"
     if title.startswith("tagesschau in 100 Sekunden"):
@@ -48,6 +56,10 @@ def _duration(channel: dict[str, Any]) -> int | None:
         if isinstance(entry, dict) and str(entry.get("length", "")).isdigit():
             return int(entry["length"])
     return None
+
+
+def _epoch(value: Any) -> int | None:
+    return int(value) if isinstance(value, int | float) and value > 0 else None
 
 
 def parse_channels(data: Any) -> list[Broadcast]:
@@ -75,6 +87,8 @@ def parse_channels(data: Any) -> list[Broadcast]:
                 hls=hls if isinstance(hls, str) and hls.startswith("https://") else None,
                 duration_s=_duration(channel),
                 topics=topics,
+                start=_epoch(channel.get("start")),
+                end=_epoch(channel.get("end")),
             )
         )
     return result
@@ -94,22 +108,34 @@ def todays_20uhr(broadcasts: list[Broadcast], now: datetime) -> Broadcast | None
     return b if b and b.mp4 else None
 
 
+def broadcast_window(broadcasts: list[Broadcast], now: datetime) -> tuple[int, int]:
+    """Beginn und Ende der heutigen 20-Uhr-Ausgabe als Unix-Zeit.
+
+    Während der Sendung nennt die API beides („Aktuelle Sendung“), sonst gilt 20:00 plus 15 min.
+    """
+    local = now.astimezone(BERLIN)
+    for b in broadcasts:
+        if (
+            b.kind == "live20"
+            and b.start
+            and b.end
+            and datetime.fromtimestamp(b.start, BERLIN).date() == local.date()
+        ):
+            return b.start, b.end
+    start = int(datetime.combine(local.date(), BROADCAST_START, BERLIN).timestamp())
+    return start, start + BROADCAST_SECONDS
+
+
 def choose_media(broadcasts: list[Broadcast], now: datetime) -> dict[str, Any] | None:
-    """Was beim Start des Blocks läuft: live um 20 Uhr, sonst die heutige Aufzeichnung."""
+    """Was beim Start des Blocks läuft.
+
+    1. die heutige Aufzeichnung, sobald sie veröffentlicht ist
+    2. sonst ab 19:58 der Livestream; nach 20 Uhr springt der Fernseher an den Anfang
+       der Sendung (zeitversetzt) und hält am Ende an
+    3. sonst die neuesten 100 Sekunden von heute
+    """
     local = now.astimezone(BERLIN)
     hundred = _newest_today(broadcasts, "100s", local.date())
-    if LIVE_START <= local.time() < LIVE_END:
-        live = next((b for b in broadcasts if b.kind == "live" and b.hls), None)
-        if live is not None:
-            return {
-                "format": "hls",
-                "src": live.hls,
-                "live": True,
-                "title": "tagesschau live",
-                "attribution": ATTRIBUTION + ", Livestream tagesschau24",
-                "duration_s": 900,
-                "fallback_src": hundred.mp4 if hundred else None,
-            }
     today = todays_20uhr(broadcasts, now)
     if today is not None:
         return {
@@ -120,6 +146,23 @@ def choose_media(broadcasts: list[Broadcast], now: datetime) -> dict[str, Any] |
             "attribution": ATTRIBUTION,
             "duration_s": today.duration_s,
             "fallback_src": None,
+        }
+    start, end = broadcast_window(broadcasts, now)
+    stream = next((b for b in broadcasts if b.kind in ("live20", "live") and b.hls), None)
+    started = datetime.fromtimestamp(start, BERLIN)
+    in_reach = local.time() >= LIVE_START and local - started < TIMESHIFT_LIMIT
+    if stream is not None and in_reach:
+        shifted = local.timestamp() - start > 60
+        return {
+            "format": "hls",
+            "src": stream.hls,
+            "live": not shifted,
+            "title": "tagesschau, 20 Uhr (zeitversetzt)" if shifted else "tagesschau live",
+            "attribution": ATTRIBUTION + ", Livestream tagesschau24",
+            "duration_s": end - start,
+            "start_at": start if local.timestamp() >= start else None,
+            "end_at": end,
+            "fallback_src": hundred.mp4 if hundred else None,
         }
     if hundred is not None and hundred.mp4:
         aired = hundred.date.astimezone(BERLIN).strftime("%H:%M") if hundred.date else ""

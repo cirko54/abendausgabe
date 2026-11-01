@@ -73,6 +73,7 @@
   document.addEventListener("keydown", function (event) {
     const isOk = event.keyCode === 13 || event.key === "Enter";
     const isRight = event.keyCode === 39 || event.key === "ArrowRight";
+    if (player) showChrome();
     if (player && (isOk || isRight)) {
       // Im Video: OK pausiert bzw. spielt weiter, damit ein versehentliches OK
       // die Nachrichten nicht überspringt. Weiter mit Pfeil rechts oder nach dem Ende.
@@ -315,17 +316,34 @@
     return hlsLoading;
   }
 
+  // Vollbild: Titel und Bedienhinweis blenden nach einigen Sekunden aus und kommen
+  // bei jeder Taste, bei Pause und am Ende zurück. Die Quelle bleibt oben links klein sichtbar.
   function renderVideo(block) {
     const source = block.attribution ? "Quelle: " + esc(block.attribution) : "";
     return (
-      '<div class="screen video-screen">' +
-      '<p class="kicker" id="vid-title">' + esc(block.title) + "</p>" +
-      '<div class="video-wrap"><video id="vid" playsinline preload="auto"></video>' +
-      '<p id="vid-msg" class="vid-msg">Lädt …</p></div>' +
-      '<p class="video-foot"><span id="vid-source">' + source + "</span>" +
-      '<span id="vid-hint" class="vid-hint">OK: Pause · ▶ Weiter</span></p>' +
+      '<div class="video-screen chrome-on" id="vid-screen">' +
+      '<video id="vid" playsinline preload="auto"></video>' +
+      '<div class="vid-top"><p class="kicker" id="vid-title">' + esc(block.title) + "</p>" +
+      '<p id="vid-source" class="vid-source">' + source + "</p></div>" +
+      '<p id="vid-msg" class="vid-msg">Lädt …</p>' +
+      '<div class="vid-bottom"><span id="vid-hint" class="vid-hint">OK: Pause · ▶ Weiter</span></div>' +
       "</div>"
     );
+  }
+
+  let chromeTimer = null;
+
+  function showChrome() {
+    const el = document.getElementById("vid-screen");
+    if (!el) return;
+    el.classList.add("chrome-on");
+    nextBtn.hidden = false;
+    clearTimeout(chromeTimer);
+    chromeTimer = setTimeout(function () {
+      if (!player || player.video.paused || player.ended || player.failed) return;
+      el.classList.remove("chrome-on");
+      nextBtn.hidden = true;
+    }, 5000);
   }
 
   function report(status, extra) {
@@ -339,10 +357,20 @@
     if (!el) return;
     el.textContent = text || "";
     el.style.opacity = text ? "1" : "0";
+    if (text) showChrome();
+  }
+
+  // Zeitpunkt der Sendung, der gerade läuft (ms), für Livestreams mit Anfang und Ende.
+  function positionDate() {
+    if (!player) return null;
+    if (player.hls && player.hls.playingDate) return player.hls.playingDate.getTime();
+    if (player.dateOffset != null) return player.video.currentTime * 1000 + player.dateOffset;
+    return null;
   }
 
   function stopPlayer() {
     if (!player) return;
+    clearTimeout(chromeTimer);
     if (player.hls) player.hls.destroy();
     try { player.video.pause(); } catch (e) { /* schon weg */ }
     player.video.removeAttribute("src");
@@ -364,16 +392,53 @@
     return "mp4";
   }
 
+  // Nativ (ohne Sprung an den Anfang): Position über seekable schätzen.
+  function playHlsNative(video, media) {
+    video.src = media.src;
+    video.addEventListener("loadedmetadata", function once() {
+      video.removeEventListener("loadedmetadata", once);
+      if (!player || player.video !== video || !video.seekable.length) return;
+      const edge = video.seekable.end(video.seekable.length - 1);
+      let target = edge;
+      if (media.start_at) {
+        target = Math.max(video.seekable.start(0), edge - (Date.now() / 1000 - media.start_at));
+        video.currentTime = target;
+        player.dateOffset = media.start_at * 1000 - target * 1000;
+      } else {
+        player.dateOffset = Date.now() - edge * 1000;
+      }
+    });
+    return "hls-nativ";
+  }
+
   function playHls(media) {
     const video = player.video;
-    if (video.canPlayType("application/vnd.apple.mpegurl")) {
-      video.src = media.src;
-      return Promise.resolve("hls-nativ");
-    }
+    const mine = player;
+    const native = video.canPlayType("application/vnd.apple.mpegurl");
+    // Mit Anfang und Ende braucht es die Sendezeit je Segment; die liefert hls.js.
+    const wantJs = !native || media.start_at || media.end_at;
+    if (!wantJs) return Promise.resolve(playHlsNative(video, media));
     return loadHls().then(function (Hls) {
-      if (!Hls || !Hls.isSupported()) throw new Error("HLS wird hier nicht unterstützt");
-      const hls = new Hls({ maxBufferLength: 30 });
+      if (mine !== player) return "abgebrochen";
+      if (!Hls || !Hls.isSupported()) {
+        if (native) return playHlsNative(video, media);
+        throw new Error("HLS wird hier nicht unterstützt");
+      }
+      const hls = new Hls({ maxBufferLength: 30, subtitleDisplay: false });
       player.hls = hls;
+      if (media.start_at) {
+        // Erste Playlist abwarten, dann an den Sendebeginn springen (Sendezeit je Segment).
+        hls.once(Hls.Events.LEVEL_LOADED, function (_e, data) {
+          const frags = (data && data.details && data.details.fragments) || [];
+          const first = frags[0];
+          let pos = -1;
+          if (first && first.programDateTime) {
+            pos = Math.max(first.start, first.start + (media.start_at * 1000 - first.programDateTime) / 1000);
+          }
+          hls.stopLoad();
+          hls.startLoad(pos);
+        });
+      }
       hls.on(Hls.Events.ERROR, function (_e, data) {
         if (!data || !data.fatal) return;
         report("error", { via: "hls.js", error: String(data.details || data.type) });
@@ -381,6 +446,7 @@
         player.hls = null;
         if (media.fallback_src) {
           setMsg("Livestream gestört, zeige die letzte Kurzfassung.");
+          player.endAt = null;
           playFile(video, media.fallback_src);
           video.play().catch(function () {});
         } else {
@@ -397,12 +463,13 @@
   function startVideo(block) {
     const video = document.getElementById("vid");
     if (!video) return;
-    player = { video: video, hls: null, ended: false, failed: false };
+    player = { video: video, hls: null, ended: false, failed: false, endAt: null, dateOffset: null };
     const mine = player;
     let via = "";
 
     video.addEventListener("playing", function () {
       setMsg("");
+      showChrome();
       report("playing", { via: via });
     });
     video.addEventListener("pause", function () {
@@ -411,6 +478,16 @@
     video.addEventListener("ended", function () {
       mine.ended = true;
       setMsg("Ende. Weiter mit OK.");
+      report("ended", { via: via });
+    });
+    // Livestream: am Ende der Sendung anhalten, statt ins nächste Programm zu laufen.
+    video.addEventListener("timeupdate", function () {
+      if (mine !== player || mine.ended || !mine.endAt) return;
+      const at = positionDate();
+      if (at == null || at < mine.endAt * 1000) return;
+      mine.ended = true;
+      video.pause();
+      setMsg("Ende der Sendung. Weiter mit OK.");
       report("ended", { via: via });
     });
     video.addEventListener("error", function () {
@@ -426,10 +503,11 @@
       if (title && media.title) title.textContent = media.title;
       const src = document.getElementById("vid-source");
       if (src && media.attribution) src.textContent = "Quelle: " + media.attribution;
-      if (media.live) {
-        const hint = document.getElementById("vid-hint");
-        if (hint) hint.textContent = "Live · OK: Pause · ▶ Weiter";
+      const hint = document.getElementById("vid-hint");
+      if (hint && media.format === "hls") {
+        hint.textContent = (media.live ? "Live" : "Zeitversetzt") + " · OK: Pause · ▶ Weiter";
       }
+      mine.endAt = media.end_at || null;
       const ready = media.format === "hls" ? playHls(media) : Promise.resolve(playFile(video, media.src));
       ready
         .then(function (how) {
@@ -492,6 +570,7 @@
       return;
     }
     stopPlayer();
+    document.body.classList.toggle("video-mode", !!isVideo);
     if (state.phase === "lobby") html = renderLobby();
     else if (state.phase === "ended") html = renderEnded();
     else if (isVideo) html = renderVideo(block);
@@ -507,7 +586,10 @@
       main.firstElementChild.style.animation = "none";
     }
     updateCountdown();
-    if (isVideo) startVideo(block);
+    if (isVideo) {
+      startVideo(block);
+      showChrome();
+    }
 
     const reveal = document.getElementById("reveal");
     if (reveal) {
