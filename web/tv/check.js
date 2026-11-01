@@ -415,6 +415,8 @@
     });
   }
 
+  var shownNotes = {};
+
   function showVerdict(verdict) {
     if (!verdict) return;
     var old = document.getElementById("verdict");
@@ -424,7 +426,12 @@
     el.className = "verdict";
     el.appendChild(document.createTextNode("Ergebnis " + verdict.code + ": " + verdict.label));
     stepEl.parentNode.insertBefore(el, stepEl.nextSibling);
-    for (var i = 0; i < (verdict.notes || []).length; i++) log("Hinweis", null, verdict.notes[i]);
+    // Das Urteil kommt zweimal (Bericht, dann Tasten); jeden Hinweis nur einmal zeigen.
+    for (var i = 0; i < (verdict.notes || []).length; i++) {
+      if (shownNotes[verdict.notes[i]]) continue;
+      shownNotes[verdict.notes[i]] = true;
+      log("Hinweis", null, verdict.notes[i]);
+    }
   }
 
   var steps = [basics, keysMain, jsFeatures, cssFeatures, websocketTest, fontTest, mediaInfo,

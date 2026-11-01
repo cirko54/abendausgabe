@@ -185,3 +185,10 @@ Offen für Phase 1: TV-Ergebnis hier eintragen, Router-Typ (Präsenz), Kalenderq
     Grund: Fühlt sich der Blick über den Tellerrand wie Pflicht an, wird die eigene Blase mittelfristig wieder die angenehmere Wahl. Ziel ist sozialer Kitt, nicht Erziehung.
     Verworfen: feste Quote („mindestens ein Block“).
     Offen für Schritt 6: eine Profilfrage, wie gern jemand provoziert werden will (ergänzt Frage 5 „Wie sehr willst du gefordert werden?“).
+
+## 2026-11-01 – Schritt 2: Test am Fernseher
+
+41. Prüfseite in der Android-TV-App (Chromium 156) gegen den NAS-Server: MP4 spielt, HLS nativ spielt, HLS über hls.js 1.7.3 spielt (tagesschau24-Livestream), YouTube spielt, 78 Bilder/s, WebSocket 36 ms. Hypothese aus Nr. 16 bestätigt.
+    Folge: In der App spielt der Fernseher HLS selbst; hls.js ist Rückfallebene für den TV-Browser (Chromium 77) und fremde Geräte. tv.js wählt deshalb zuerst den nativen Weg.
+    Vorher im Headless-Chrome durchgespielt: Videoblock spielt, Zustandsmeldungen unterbrechen ihn nicht, OK pausiert, Pfeil rechts schaltet weiter.
+    Offen: echte Sendung um 20 Uhr mit dem Livestream; dabei klären, ob tagesschau24 die 20-Uhr-Ausgabe zeitgleich zeigt (Nr. 37, H 80 %). Das Server-Log zeigt die Rückmeldung „TV-Wiedergabe“ mit dem Weg (hls-nativ, hls.js, mp4).
