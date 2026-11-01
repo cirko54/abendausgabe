@@ -37,6 +37,7 @@ class Settings:
     ask_timeout_s: float
     youtube_test_id: str
     cookie_secure: bool
+    program: str  # heute | test
 
 
 @lru_cache
@@ -49,6 +50,7 @@ def get_settings() -> Settings:
         ask_timeout_s=float(os.environ.get("ABEND_ASK_TIMEOUT_S", "45")),
         youtube_test_id=os.environ.get("ABEND_YOUTUBE_TEST_ID", "jNQXAC9IVRw"),
         cookie_secure=_env_bool("ABEND_COOKIE_SECURE", False),
+        program=os.environ.get("ABEND_PROGRAM", "heute").strip().lower(),
     )
 
 

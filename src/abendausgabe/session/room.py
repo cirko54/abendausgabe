@@ -140,6 +140,13 @@ class Room:
         self._enter_block(self.block_index + 1, now)
         return True
 
+    def set_rundown(self, rundown: list[dict[str, Any]]) -> bool:
+        """Neuer Tagesablauf, nur in der Lobby: Eine laufende Sendung ändert sich nicht."""
+        if self.phase != "lobby" or not rundown or rundown == self.rundown:
+            return False
+        self.rundown = rundown
+        return True
+
     def reset(self) -> bool:
         """Zurück in die Lobby (nur Admins, Testbetrieb)."""
         if self.phase != "ended":

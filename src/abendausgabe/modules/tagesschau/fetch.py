@@ -1,6 +1,7 @@
 """Tagesschau-API (www.tagesschau.de/api2u/): höchstens 60 Abrufe pro Stunde.
 
-Phase 0 nutzt sie nur, um echte Video-URLs für den TV-Fähigkeitstest zu finden.
+Liefert echte Video-URLs für den TV-Fähigkeitstest und den Endpunkt `channels`
+für den tagesschau-Block (block.py).
 """
 
 from __future__ import annotations
@@ -80,3 +81,7 @@ async def media_for_check() -> dict[str, Any]:
     except (httpx.HTTPError, ratelimit.RateLimitedError, ValueError) as exc:
         result["error"] = f"{type(exc).__name__}: {exc}"
     return result
+
+
+async def channels(transport: httpx.AsyncBaseTransport | None = None) -> Any:
+    return await get_json("channels", transport)

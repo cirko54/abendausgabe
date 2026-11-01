@@ -14,6 +14,7 @@
   let state = null;
   let screenKey = "";
   let deadlineAt = null;
+  let player = null; // { video, hls, ended, failed } des laufenden Videoblocks
 
   function scale() {
     const width = window.innerWidth || document.documentElement.clientWidth || DESIGN_WIDTH;
@@ -70,7 +71,17 @@
   }
 
   document.addEventListener("keydown", function (event) {
-    if (event.keyCode === 13 || event.key === "Enter") {
+    const isOk = event.keyCode === 13 || event.key === "Enter";
+    const isRight = event.keyCode === 39 || event.key === "ArrowRight";
+    if (player && (isOk || isRight)) {
+      // Im Video: OK pausiert bzw. spielt weiter, damit ein versehentliches OK
+      // die Nachrichten nicht überspringt. Weiter mit Pfeil rechts oder nach dem Ende.
+      event.preventDefault();
+      if (isRight || player.ended || player.failed) send({ type: "ok" });
+      else togglePlay();
+      return;
+    }
+    if (isOk) {
       event.preventDefault();
       send({ type: "ok" });
     }
@@ -287,6 +298,177 @@
     );
   }
 
+  // ------------------------------------------------------------ Video
+
+  let hlsLoading = null;
+
+  function loadHls() {
+    if (window.Hls) return Promise.resolve(window.Hls);
+    if (hlsLoading) return hlsLoading;
+    hlsLoading = new Promise(function (resolve, reject) {
+      const script = document.createElement("script");
+      script.src = "/shared/vendor/hls-1.7.3.min.js";
+      script.onload = function () { resolve(window.Hls); };
+      script.onerror = function () { hlsLoading = null; reject(new Error("hls.js nicht geladen")); };
+      document.head.appendChild(script);
+    });
+    return hlsLoading;
+  }
+
+  function renderVideo(block) {
+    const source = block.attribution ? "Quelle: " + esc(block.attribution) : "";
+    return (
+      '<div class="screen video-screen">' +
+      '<p class="kicker" id="vid-title">' + esc(block.title) + "</p>" +
+      '<div class="video-wrap"><video id="vid" playsinline preload="auto"></video>' +
+      '<p id="vid-msg" class="vid-msg">Lädt …</p></div>' +
+      '<p class="video-foot"><span id="vid-source">' + source + "</span>" +
+      '<span id="vid-hint" class="vid-hint">OK: Pause · ▶ Weiter</span></p>' +
+      "</div>"
+    );
+  }
+
+  function report(status, extra) {
+    const msg = { type: "media", block: state && state.block ? state.block.id : "", status: status };
+    if (extra) for (const k in extra) msg[k] = extra[k];
+    send(msg);
+  }
+
+  function setMsg(text) {
+    const el = document.getElementById("vid-msg");
+    if (!el) return;
+    el.textContent = text || "";
+    el.style.opacity = text ? "1" : "0";
+  }
+
+  function stopPlayer() {
+    if (!player) return;
+    if (player.hls) player.hls.destroy();
+    try { player.video.pause(); } catch (e) { /* schon weg */ }
+    player.video.removeAttribute("src");
+    player = null;
+  }
+
+  function togglePlay() {
+    if (!player) return;
+    if (player.video.paused) {
+      const p = player.video.play();
+      if (p && p.catch) p.catch(function () { setMsg("Abspielen nicht möglich. Weiter mit ▶."); });
+    } else {
+      player.video.pause();
+    }
+  }
+
+  function playFile(video, src) {
+    video.src = src;
+    return "mp4";
+  }
+
+  function playHls(media) {
+    const video = player.video;
+    if (video.canPlayType("application/vnd.apple.mpegurl")) {
+      video.src = media.src;
+      return Promise.resolve("hls-nativ");
+    }
+    return loadHls().then(function (Hls) {
+      if (!Hls || !Hls.isSupported()) throw new Error("HLS wird hier nicht unterstützt");
+      const hls = new Hls({ maxBufferLength: 30 });
+      player.hls = hls;
+      hls.on(Hls.Events.ERROR, function (_e, data) {
+        if (!data || !data.fatal) return;
+        report("error", { via: "hls.js", error: String(data.details || data.type) });
+        hls.destroy();
+        player.hls = null;
+        if (media.fallback_src) {
+          setMsg("Livestream gestört, zeige die letzte Kurzfassung.");
+          playFile(video, media.fallback_src);
+          video.play().catch(function () {});
+        } else {
+          player.failed = true;
+          setMsg("Livestream gestört. Weiter mit OK.");
+        }
+      });
+      hls.loadSource(media.src);
+      hls.attachMedia(video);
+      return "hls.js";
+    });
+  }
+
+  function startVideo(block) {
+    const video = document.getElementById("vid");
+    if (!video) return;
+    player = { video: video, hls: null, ended: false, failed: false };
+    const mine = player;
+    let via = "";
+
+    video.addEventListener("playing", function () {
+      setMsg("");
+      report("playing", { via: via });
+    });
+    video.addEventListener("pause", function () {
+      if (!mine.ended && mine === player) setMsg("Pause. OK spielt weiter.");
+    });
+    video.addEventListener("ended", function () {
+      mine.ended = true;
+      setMsg("Ende. Weiter mit OK.");
+      report("ended", { via: via });
+    });
+    video.addEventListener("error", function () {
+      if (mine !== player || mine.hls) return; // hls.js meldet selbst
+      mine.failed = true;
+      setMsg("Video lässt sich nicht abspielen. Weiter mit OK.");
+      report("error", { via: via, error: String(video.error && video.error.code) });
+    });
+
+    function begin(media) {
+      if (mine !== player) return;
+      const title = document.getElementById("vid-title");
+      if (title && media.title) title.textContent = media.title;
+      const src = document.getElementById("vid-source");
+      if (src && media.attribution) src.textContent = "Quelle: " + media.attribution;
+      if (media.live) {
+        const hint = document.getElementById("vid-hint");
+        if (hint) hint.textContent = "Live · OK: Pause · ▶ Weiter";
+      }
+      const ready = media.format === "hls" ? playHls(media) : Promise.resolve(playFile(video, media.src));
+      ready
+        .then(function (how) {
+          via = how;
+          const p = video.play();
+          if (p && p.catch) p.catch(function () { setMsg("OK drücken zum Abspielen."); });
+        })
+        .catch(function (err) {
+          report("error", { via: "hls", error: String(err && err.message) });
+          if (media.fallback_src) {
+            via = "mp4-rückfall";
+            playFile(video, media.fallback_src);
+            video.play().catch(function () { setMsg("OK drücken zum Abspielen."); });
+          } else {
+            mine.failed = true;
+            setMsg("Livestream geht auf diesem Gerät nicht. Weiter mit OK.");
+          }
+        });
+    }
+
+    if (block.media) {
+      fetch("/api/media/" + encodeURIComponent(block.media))
+        .then(function (r) { return r.json(); })
+        .then(function (data) {
+          if (data && data.media) begin(data.media);
+          else {
+            mine.failed = true;
+            setMsg(((data && data.error) || "Heute nicht verfügbar.") + " Weiter mit OK.");
+          }
+        })
+        .catch(function () {
+          mine.failed = true;
+          setMsg("Server nicht erreichbar. Weiter mit OK.");
+        });
+    } else {
+      begin({ format: block.format || "mp4", src: block.src, title: block.title, attribution: block.attribution });
+    }
+  }
+
   function updateCountdown() {
     const el = document.getElementById("countdown");
     if (!el || deadlineAt === null) return;
@@ -304,8 +486,15 @@
     const block = state.block;
     let html = "";
     let key = state.phase + ":" + state.block_index + ":" + state.block_phase;
+    const isVideo = state.block_phase === "show" && block && block.type === "video";
+    if (isVideo && key === screenKey && player) {
+      // Laufendes Video nicht neu aufbauen, nur die Seitenleiste aktualisieren.
+      return;
+    }
+    stopPlayer();
     if (state.phase === "lobby") html = renderLobby();
     else if (state.phase === "ended") html = renderEnded();
+    else if (isVideo) html = renderVideo(block);
     else if (state.block_phase === "show") html = renderInfo(block);
     else if (state.block_phase === "ask") html = renderAsk(block);
     else if (state.block_phase === "reveal") html = renderReveal(block, state.reveal);
@@ -318,6 +507,7 @@
       main.firstElementChild.style.animation = "none";
     }
     updateCountdown();
+    if (isVideo) startVideo(block);
 
     const reveal = document.getElementById("reveal");
     if (reveal) {

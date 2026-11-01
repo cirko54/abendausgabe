@@ -1,0 +1,34 @@
+{
+ "err": null,
+ "result": {
+  "results": [
+   {
+    "channel": "ARD",
+    "topic": "Wetter vor acht",
+    "title": "Das Wetter im Ersten",
+    "timestamp": 1793465520,
+    "duration": 159,
+    "url_video": "https://ctv-videos.daserste.de/int/2026/10/31/ARDOV106665/live_20261031_165342_sendeton_1280x720-50p-3200kbit.mp4",
+    "url_video_hd": "https://ctv-videos.daserste.de/int/2026/10/31/ARDOV106665/live_20261031_165342_sendeton_1920x1080-50p-5000kbit.mp4"
+   },
+   {
+    "channel": "ARD",
+    "topic": "Wetter vor acht",
+    "title": "Wetter vor acht",
+    "timestamp": 1793386200,
+    "duration": 166,
+    "url_video": "https://ctv-videos.daserste.de/int/2026/10/30/ARDOV139569/live_20261030_185021_sendeton_1280x720-50p-3200kbit.mp4",
+    "url_video_hd": "https://ctv-videos.daserste.de/int/2026/10/30/ARDOV139569/live_20261030_185021_sendeton_1920x1080-50p-5000kbit.mp4"
+   },
+   {
+    "channel": "ARD",
+    "topic": "Wetter vor acht",
+    "title": "Wetter vor acht",
+    "timestamp": 1793299800,
+    "duration": 167,
+    "url_video": "https://ctv-videos.daserste.de/int/2026/10/29/ARDOV139567/live_20261029_184933_sendeton_1280x720-50p-3200kbit.mp4",
+    "url_video_hd": "https://ctv-videos.daserste.de/int/2026/10/29/ARDOV139567/live_20261029_184933_sendeton_1920x1080-50p-5000kbit.mp4"
+   }
+  ]
+ }
+}

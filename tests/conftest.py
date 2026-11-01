@@ -17,6 +17,8 @@ def app(tmp_path: Path, monkeypatch: pytest.MonkeyPatch) -> Iterator[FastAPI]:
     monkeypatch.setenv("ABEND_CONFIG_DIR", str(PROJECT_ROOT / "config.example"))
     monkeypatch.setenv("ABEND_EXAMPLE_CONFIG_DIR", str(PROJECT_ROOT / "config.example"))
     monkeypatch.setenv("ABEND_WEB_DIR", str(PROJECT_ROOT / "web"))
+    # Testsendung statt Tagesablauf: keine Live-Abrufe in Tests
+    monkeypatch.setenv("ABEND_PROGRAM", "test")
     clear_caches()
     from abendausgabe.app import create_app
 

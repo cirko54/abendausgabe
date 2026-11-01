@@ -6,6 +6,7 @@ Der TV-Kanal hat in Phase 0 keine Authentifizierung (nur LAN, siehe decisions.md
 from __future__ import annotations
 
 import json
+import logging
 import time
 from functools import partial
 from typing import Any
@@ -16,6 +17,7 @@ from abendausgabe.api.deps import COOKIE_NAME, identity_from_token
 from abendausgabe.session.manager import RoomManager
 
 router = APIRouter()
+log = logging.getLogger(__name__)
 
 
 def _parse(raw: str) -> dict[str, Any] | None:
@@ -42,13 +44,19 @@ async def ws_tv(ws: WebSocket) -> None:
     await ws.accept()
     manager.tv_sockets.add(ws)
     await manager.send_state(ws, viewer=None)
-    room = manager.room
+    await manager.refresh_program()
     try:
         while True:
             msg = _parse(await ws.receive_text())
-            if msg and msg.get("type") == "ok":
+            if not msg:
+                continue
+            if msg.get("type") == "ok":
                 # Nach dem Sendeschluss bewirkt OK nichts: kein „mehr davon“.
-                await manager.handle(lambda: room.advance(time.monotonic()))
+                await manager.advance()
+            elif msg.get("type") == "media":
+                # Wiedergabe-Rückmeldung des Fernsehers, nur fürs Log (Livestream-Test)
+                detail = {k: str(msg.get(k, ""))[:200] for k in ("block", "status", "via", "error")}
+                log.info("TV-Wiedergabe: %s", detail)
     except WebSocketDisconnect:
         pass
     finally:
@@ -94,11 +102,10 @@ async def ws_controller(ws: WebSocket) -> None:
                 signal_kind = str(msg.get("kind", ""))
                 await manager.handle(partial(room.signal, pid, signal_kind))
             elif kind == "advance" and is_admin:
-                await manager.handle(
-                    lambda: (
-                        room.reset() if room.phase == "ended" else room.advance(time.monotonic())
-                    )
-                )
+                if room.phase == "ended":
+                    await manager.handle(room.reset)
+                else:
+                    await manager.advance()
             elif kind == "end_now" and is_admin:
                 await manager.handle(lambda: room.end_now(time.monotonic()))
     except WebSocketDisconnect:

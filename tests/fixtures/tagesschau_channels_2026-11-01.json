@@ -1,0 +1,151 @@
+{
+ "channels": [
+  {
+   "sophoraId": "tagesschau-vierundzwanzig-13500",
+   "title": "Im Livestream: tagesschau24",
+   "streams": {
+    "adaptivestreaming": "https://tagesschau-live.ard-mcdn.de/tagesschau/live/hls/de/master.m3u8"
+   },
+   "copyright": "tagesschau",
+   "type": "video",
+   "tracking": [
+    {
+     "sid": "app.multimedia.livestreams.livestream-5-100"
+    },
+    {
+     "length": "86400"
+    }
+   ],
+   "content": []
+  },
+  {
+   "sophoraId": "video-1676014",
+   "title": "tagesschau in 100 Sekunden",
+   "date": "2026-11-01T09:36:48.289+01:00",
+   "streams": {
+    "h264s": "https://tagesschau-progressive.ard-mcdn.de/video/2026/1101/TV-20261101-0934-2200.webs.h264.mp4",
+    "h264m": "https://tagesschau-progressive.ard-mcdn.de/video/2026/1101/TV-20261101-0934-2200.webm.h264.mp4",
+    "h264xl": "https://tagesschau-progressive.ard-mcdn.de/video/2026/1101/TV-20261101-0934-2200.webxl.h264.mp4",
+    "adaptivestreaming": "https://adaptive.tagesschau.de/i/video/2026/1101/TV-20261101-0934-2200.,webl.h264,webs.h264,webm.h264,webxl.h264,webxxl.h264,.mp4.csmil/master.m3u8"
+   },
+   "copyright": "tagesschau",
+   "type": "video",
+   "tracking": [
+    {
+     "sid": "app.multimedia.sendung.tagesschau_in_100_sekunden.video-1676014"
+    },
+    {
+     "length": "114"
+    }
+   ],
+   "content": []
+  },
+  {
+   "sophoraId": "ts-81724",
+   "title": "tagesschau",
+   "date": "2026-11-01T14:00:00.000+01:00",
+   "streams": {
+    "h264s": "https://tagesschau-progressive.ard-mcdn.de/video/2026/1101/TV-20261101-1405-1900.webs.h264.mp4",
+    "h264m": "https://tagesschau-progressive.ard-mcdn.de/video/2026/1101/TV-20261101-1405-1900.webm.h264.mp4",
+    "h264xl": "https://tagesschau-progressive.ard-mcdn.de/video/2026/1101/TV-20261101-1405-1900.webxl.h264.mp4",
+    "adaptivestreaming": "https://adaptive.tagesschau.de/i/video/2026/1101/TV-20261101-1405-1900.,webl.h264,webs.h264,webm.h264,webxl.h264,webxxl.h264,.mp4.csmil/master.m3u8"
+   },
+   "copyright": "tagesschau",
+   "type": "video",
+   "tracking": [
+    {
+     "sid": "app.multimedia.sendung.tagesschau.ts-81724"
+    },
+    {
+     "length": "180"
+    }
+   ],
+   "content": [
+    {
+     "type": "text",
+     "value": "Thema 1 der Sendung"
+    },
+    {
+     "type": "text",
+     "value": "Thema 2 der Sendung"
+    },
+    {
+     "type": "text",
+     "value": "Thema 3 der Sendung"
+    },
+    {
+     "type": "text",
+     "value": "Thema 4 der Sendung"
+    },
+    {
+     "type": "text",
+     "value": "Thema 5 der Sendung"
+    }
+   ]
+  },
+  {
+   "sophoraId": "ts-81764",
+   "title": "tagesschau",
+   "date": "2026-10-31T20:00:00.000+01:00",
+   "streams": {
+    "h264s": "https://tagesschau-progressive.ard-mcdn.de/video/2026/1031/TV-20261031-2025-2400.webs.h264.mp4",
+    "h264m": "https://tagesschau-progressive.ard-mcdn.de/video/2026/1031/TV-20261031-2025-2400.webm.h264.mp4",
+    "h264xl": "https://tagesschau-progressive.ard-mcdn.de/video/2026/1031/TV-20261031-2025-2400.webxl.h264.mp4",
+    "adaptivestreaming": "https://adaptive.tagesschau.de/i/video/2026/1031/TV-20261031-2025-2400.,webl.h264,webs.h264,webm.h264,webxl.h264,webxxl.h264,.mp4.csmil/master.m3u8"
+   },
+   "copyright": "tagesschau",
+   "type": "video",
+   "tracking": [
+    {
+     "sid": "app.multimedia.sendung.tagesschau_20_uhr.ts-81764"
+    },
+    {
+     "length": "900"
+    }
+   ],
+   "content": [
+    {
+     "type": "text",
+     "value": "Thema 1 der Sendung"
+    },
+    {
+     "type": "text",
+     "value": "Thema 2 der Sendung"
+    },
+    {
+     "type": "text",
+     "value": "Thema 3 der Sendung"
+    },
+    {
+     "type": "text",
+     "value": "Thema 4 der Sendung"
+    },
+    {
+     "type": "text",
+     "value": "Thema 5 der Sendung"
+    },
+    {
+     "type": "text",
+     "value": "Thema 6 der Sendung"
+    },
+    {
+     "type": "text",
+     "value": "Thema 7 der Sendung"
+    },
+    {
+     "type": "text",
+     "value": "Thema 8 der Sendung"
+    },
+    {
+     "type": "text",
+     "value": "Thema 9 der Sendung"
+    },
+    {
+     "type": "text",
+     "value": "Thema 10 der Sendung"
+    }
+   ]
+  }
+ ],
+ "type": "channels"
+}

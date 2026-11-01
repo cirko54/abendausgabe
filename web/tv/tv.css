@@ -109,3 +109,15 @@ h1 { font-size: 4.5rem; line-height: 1.12; margin: 0 0 2rem; font-weight: 700; m
 }
 .next:focus, .next:hover { border-color: var(--text); outline: none; }
 .next[hidden] { display: none; }
+
+/* Videoblock: 16:9 ohne aspect-ratio (Chromium 77 kennt es nicht) */
+.video-screen { width: 100%; }
+.video-screen .kicker { margin-bottom: 1rem; }
+.video-wrap { position: relative; width: 100%; padding-top: 56.25%; background: #000; border-radius: 0.6rem; overflow: hidden; }
+.video-wrap video { position: absolute; top: 0; left: 0; width: 100%; height: 100%; background: #000; }
+.vid-msg {
+  position: absolute; left: 0; right: 0; bottom: 2.5rem; margin: 0; text-align: center;
+  font-size: 2.4rem; color: var(--text); text-shadow: 0 0.15rem 0.6rem #000;
+  transition: opacity 0.3s;
+}
+.video-foot { display: -webkit-box; display: -webkit-flex; display: flex; -webkit-box-pack: justify; -webkit-justify-content: space-between; justify-content: space-between; color: var(--muted); font-size: 1.6rem; margin: 1rem 0 0; }

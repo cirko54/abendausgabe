@@ -2,19 +2,25 @@
 
 from __future__ import annotations
 
+import asyncio
+import logging
 from collections.abc import AsyncIterator
 from contextlib import asynccontextmanager
+from datetime import datetime
+from typing import Any
 
 from fastapi import FastAPI
 from fastapi.responses import RedirectResponse
 from fastapi.staticfiles import StaticFiles
 
 from abendausgabe import __version__
-from abendausgabe.api import devices, profile, qr, tvcheck, ws
+from abendausgabe.api import devices, media, profile, qr, tvcheck, ws
+from abendausgabe.assembly.notausgabe import build_program
 from abendausgabe.core.config import get_people, get_settings
 from abendausgabe.core.db import Database
 from abendausgabe.core.security import AttemptLimiter
-from abendausgabe.session.manager import RoomManager
+from abendausgabe.modules.tagesschau.block import BERLIN
+from abendausgabe.session.manager import ProgramBuilder, RoomManager
 from abendausgabe.session.room import Room
 from abendausgabe.session.rundown import load_rundown
 
@@ -27,17 +33,47 @@ STATIC_MOUNTS = (
 )
 
 
+def _setup_logging() -> None:
+    """App-Meldungen ab INFO ins Container-Log (z. B. Wiedergabe-Rückmeldungen des Fernsehers)."""
+    logger = logging.getLogger("abendausgabe")
+    if not logger.handlers:
+        handler = logging.StreamHandler()
+        handler.setFormatter(logging.Formatter("%(asctime)s %(levelname)s %(name)s: %(message)s"))
+        logger.addHandler(handler)
+        logger.setLevel(logging.INFO)
+        logger.propagate = False
+
+
 def create_app() -> FastAPI:
+    _setup_logging()
     settings = get_settings()
     settings.data_dir.mkdir(parents=True, exist_ok=True)
     db = Database(f"sqlite:///{settings.data_dir / 'abendausgabe.sqlite3'}")
-    room = Room(load_rundown(), ask_timeout_s=settings.ask_timeout_s)
-    manager = RoomManager(room, db)
+    program: ProgramBuilder | None = None
+    if settings.program == "test":
+        rundown = load_rundown()
+    elif settings.program == "heute":
+        # Platzhalter, bis der Tagesablauf beim Start im Hintergrund fertig ist
+        rundown = [
+            {"id": "begruessung", "type": "info", "title": "Guten Abend", "est_minutes": 1},
+            {"id": "ende", "type": "end", "title": "Sendeschluss", "est_minutes": 0},
+        ]
+
+        async def program_today() -> list[dict[str, Any]]:
+            return await build_program(datetime.now(BERLIN))
+
+        program = program_today
+    else:
+        raise ValueError(f"ABEND_PROGRAM={settings.program!r} unbekannt; erlaubt: heute, test.")
+    room = Room(rundown, ask_timeout_s=settings.ask_timeout_s)
+    manager = RoomManager(room, db, program=program)
 
     @asynccontextmanager
     async def lifespan(_app: FastAPI) -> AsyncIterator[None]:
         await manager.start()
+        warmup = asyncio.create_task(manager.refresh_program())
         yield
+        warmup.cancel()
         await manager.stop()
 
     app = FastAPI(title="Abendausgabe", version=__version__, lifespan=lifespan)
@@ -47,7 +83,8 @@ def create_app() -> FastAPI:
     app.state.manager = manager
     app.state.pin_limiter = AttemptLimiter()
 
-    for router in (devices.router, profile.router, tvcheck.router, qr.router, ws.router):
+    routers = (devices.router, profile.router, tvcheck.router, qr.router, media.router, ws.router)
+    for router in routers:
         app.include_router(router)
 
     @app.get("/", include_in_schema=False)

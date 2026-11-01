@@ -205,14 +205,67 @@
     log("MediaSource (für hls.js)", mse);
     if (!native || !url) {
       log("HLS nativ", native ? null : false, native ? "nicht getestet: kein Testvideo" : "nicht unterstützt");
-      return next();
+      return hlsJsTest(mse, url, next);
     }
     setStep("Teste HLS-Livestream …");
     playTest(url, "HLS nativ", function (ok, detail) {
       report.media.hls_native.ok = ok;
       report.media.hls_native.detail = detail;
-      next();
+      hlsJsTest(mse, url, next);
     });
+  }
+
+  // Livestream über hls.js, so wie ihn der tagesschau-Block abspielt (decisions.md Nr. 38)
+  function hlsJsTest(mse, url, next) {
+    report.media.hls_js = { ok: false, tested: false };
+    if (!mse || !url) {
+      log("HLS über hls.js", null, !url ? "nicht getestet: kein Testvideo" : "ohne MediaSource nicht möglich");
+      return next();
+    }
+    setStep("Teste Livestream über hls.js …");
+    var script = document.createElement("script");
+    var finished = false;
+    function done(ok, detail) {
+      if (finished) return;
+      finished = true;
+      report.media.hls_js.tested = true;
+      report.media.hls_js.ok = ok;
+      report.media.hls_js.detail = detail;
+      if (!ok) log("HLS über hls.js", false, detail);
+      next();
+    }
+    script.onerror = function () { done(false, "hls.js nicht geladen"); };
+    script.onload = function () {
+      var Hls = window.Hls;
+      if (!Hls || !Hls.isSupported()) return done(false, "hls.js: nicht unterstützt");
+      report.media.hls_js.version = Hls.version;
+      var video = document.createElement("video");
+      var hls = new Hls({ maxBufferLength: 10 });
+      video.muted = true;
+      video.setAttribute("muted", "");
+      video.setAttribute("playsinline", "");
+      mediaEl.appendChild(video);
+      var timer = setTimeout(function () { finish(false, "spielt nicht innerhalb von 20 s"); }, 20000);
+      function finish(ok, detail) {
+        clearTimeout(timer);
+        try { hls.destroy(); } catch (e) { /* egal */ }
+        if (video.parentNode) video.parentNode.removeChild(video);
+        if (ok) log("HLS über hls.js " + Hls.version, true, detail);
+        done(ok, detail);
+      }
+      hls.on(Hls.Events.ERROR, function (event, data) {
+        if (data && data.fatal) finish(false, "Fehler " + data.details);
+      });
+      video.addEventListener("timeupdate", function () {
+        if (video.currentTime > 0.2) finish(true, "spielt");
+      });
+      hls.loadSource(url);
+      hls.attachMedia(video);
+      var p = video.play();
+      if (p && typeof p.then === "function") p.then(null, function () { /* timeupdate entscheidet */ });
+    };
+    script.src = "/shared/vendor/hls-1.7.3.min.js";
+    document.head.appendChild(script);
   }
 
   function youtubeTest(next) {

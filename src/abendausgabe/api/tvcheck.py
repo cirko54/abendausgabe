@@ -41,6 +41,9 @@ def compute_verdict(report: dict[str, Any]) -> dict[str, Any]:
     mp4_ok = _ok(report, "media", "mp4", "ok")
     hls_native_ok = _ok(report, "media", "hls_native", "ok")
     mse = _ok(report, "media", "mse")
+    hls_js = _dict(_dict(report.get("media")).get("hls_js"))
+    hls_js_tested = bool(hls_js.get("tested"))
+    hls_js_ok = _ok(report, "media", "hls_js", "ok")
     yt_ok = _ok(report, "youtube", "ok")
     try:
         fps = float(report.get("fps") or 0)
@@ -49,7 +52,12 @@ def compute_verdict(report: dict[str, Any]) -> dict[str, Any]:
 
     if not _ok(report, "js", "es2020"):
         notes.append("Kein ES2020: Build-Target es2017 beibehalten.")
-    if not hls_native_ok and mse:
+    if hls_js_tested:
+        notes.append(
+            "Livestream über hls.js "
+            + ("getestet: spielt." if hls_js_ok else "getestet: spielt nicht.")
+        )
+    elif not hls_native_ok and mse:
         notes.append("HLS nicht nativ, aber MediaSource vorhanden: hls.js nötig.")
     if not _ok(report, "font", "ok"):
         notes.append("Webfont nicht geladen: Darstellung mit Systemschrift prüfen.")
@@ -86,7 +94,9 @@ def compute_verdict(report: dict[str, Any]) -> dict[str, Any]:
     failures = []
     if mp4_tested and not mp4_ok:
         failures.append("MP4-Wiedergabe")
-    if not (hls_native_ok or mse):
+    if hls_js_tested and not (hls_native_ok or hls_js_ok):
+        failures.append("HLS-Livestream (weder nativ noch über hls.js)")
+    elif not (hls_native_ok or mse):
         failures.append("HLS (weder nativ noch über MediaSource)")
     if not yt_ok:
         failures.append("YouTube-Einbettung")

@@ -33,6 +33,8 @@ class TokenBucket:
 _BUCKETS: dict[str, TokenBucket] = {
     # Tagesschau: höchstens 60 Abrufe pro Stunde
     "tagesschau": TokenBucket(capacity=60, per_seconds=3600),
+    # MediathekViewWeb (Community-Projekt): sparsam, höchstens 30 pro Stunde
+    "mediathekviewweb": TokenBucket(capacity=30, per_seconds=3600),
 }
 
 

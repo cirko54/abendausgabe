@@ -7,7 +7,8 @@ import contextlib
 import json
 import logging
 import time
-from collections.abc import Callable
+from collections.abc import Awaitable, Callable
+from typing import Any
 
 from fastapi import WebSocket
 
@@ -18,10 +19,19 @@ from abendausgabe.session.room import Room
 log = logging.getLogger(__name__)
 
 
+ProgramBuilder = Callable[[], Awaitable[list[dict[str, Any]]]]
+
+PROGRAM_MAX_AGE_S = 120.0
+PROGRAM_TIMEOUT_S = 12.0
+
+
 class RoomManager:
-    def __init__(self, room: Room, db: Database) -> None:
+    def __init__(self, room: Room, db: Database, program: ProgramBuilder | None = None) -> None:
         self.room = room
         self.db = db
+        self.program = program
+        self._program_built_at: float | None = None
+        self._program_lock = asyncio.Lock()
         self.tv_sockets: set[WebSocket] = set()
         self.controller_sockets: dict[WebSocket, str] = {}
         self._lock = asyncio.Lock()
@@ -42,6 +52,34 @@ class RoomManager:
         while True:
             await asyncio.sleep(0.5)
             await self.handle(lambda: self.room.tick(time.monotonic()))
+
+    async def refresh_program(self, force: bool = False) -> None:
+        """Tagesablauf neu zusammenstellen, solange die Sendung noch nicht läuft.
+
+        Schlägt das fehl, bleibt der bisherige Ablauf; die Sendung startet trotzdem.
+        """
+        if self.program is None or self.room.phase != "lobby":
+            return
+        async with self._program_lock:
+            fresh = (
+                self._program_built_at is not None
+                and time.monotonic() - self._program_built_at < PROGRAM_MAX_AGE_S
+            )
+            if fresh and not force:
+                return
+            try:
+                rundown = await asyncio.wait_for(self.program(), PROGRAM_TIMEOUT_S)
+            except Exception:  # Quelle oder Netz kaputt: alten Ablauf behalten
+                log.exception("Tagesablauf konnte nicht zusammengestellt werden.")
+                return
+            self._program_built_at = time.monotonic()
+        await self.handle(lambda: self.room.set_rundown(rundown))
+
+    async def advance(self) -> bool:
+        """OK bzw. „Weiter“. Vor dem Sendestart wird der Ablauf aufgefrischt."""
+        if self.room.phase == "lobby":
+            await self.refresh_program()
+        return await self.handle(lambda: self.room.advance(time.monotonic()))
 
     async def handle(self, action: Callable[[], bool]) -> bool:
         """Führt eine Room-Aktion aus, persistiert Ereignisse, sendet bei Änderung."""
