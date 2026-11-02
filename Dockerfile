@@ -9,7 +9,8 @@ ENV PYTHONDONTWRITEBYTECODE=1 \
     ABEND_CONFIG_DIR=/app/config \
     ABEND_EXAMPLE_CONFIG_DIR=/app/config.example \
     ABEND_DATA_DIR=/data \
-    ABEND_WEB_DIR=/app/web
+    ABEND_WEB_DIR=/app/web \
+    ABEND_CATALOG_DIR=/app/catalog
 
 WORKDIR /app
 # Abhängigkeiten aus dem Lockfile, mit Hash-Prüfung (requirements.lock via `make lock`)
@@ -21,6 +22,7 @@ RUN pip install --no-cache-dir --no-deps .
 COPY web ./web
 # Nur das Beispiel; die eigene Konfiguration wird nach /app/config eingehängt
 COPY config.example ./config.example
+COPY catalog ./catalog
 
 RUN useradd --create-home --uid 1000 abend && mkdir -p /data && chown abend /data
 USER abend

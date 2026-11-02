@@ -4,6 +4,7 @@ from __future__ import annotations
 
 import asyncio
 import logging
+import time
 from collections.abc import AsyncIterator
 from contextlib import asynccontextmanager
 from datetime import datetime
@@ -21,9 +22,14 @@ from abendausgabe.core.dates import BERLIN
 from abendausgabe.core.db import Database
 from abendausgabe.core.security import AttemptLimiter
 from abendausgabe.learning.morning import morning_job
+from abendausgabe.modules.weltblick.block import mark_shown
+from abendausgabe.modules.weltblick.catalog import Source, selected_sources
+from abendausgabe.modules.weltblick.fetch import refresh_all
 from abendausgabe.session.manager import ProgramBuilder, RoomManager
 from abendausgabe.session.room import Room
 from abendausgabe.session.rundown import load_rundown
+
+FETCH_EVERY_S = 2 * 3600
 
 STATIC_MOUNTS = (
     ("/tv", "tv"),
@@ -45,14 +51,35 @@ def _setup_logging() -> None:
         logger.propagate = False
 
 
-async def _morning_loop(db: Database, settings: Settings) -> None:
-    """Einmal pro Minute: Morgen-Push fällig? (decisions.md Nr. 46, ohne APScheduler)"""
-    log = logging.getLogger("abendausgabe.morning")
+def _sources(settings: Settings) -> list[Source]:
+    try:
+        return selected_sources(settings.catalog_dir)
+    except (OSError, ValueError, KeyError) as exc:
+        logging.getLogger("abendausgabe").warning("Quellenkatalog fehlerhaft: %s", exc)
+        return []
+
+
+async def _background_loop(db: Database, settings: Settings) -> None:
+    """Einmal pro Minute: Morgen-Push fällig? Alle 2 Stunden: Quellen abrufen.
+
+    Eine schlanke Schleife statt APScheduler (decisions.md Nr. 46, 51).
+    """
+    log = logging.getLogger("abendausgabe.planer")
+    last_fetch = -float(FETCH_EVERY_S)
     while True:
         try:
             await morning_job(db, settings, datetime.now(BERLIN))
         except Exception:
             log.exception("Morgen-Push-Lauf fehlgeschlagen.")
+        if settings.program == "heute" and time.monotonic() - last_fetch >= FETCH_EVERY_S:
+            last_fetch = time.monotonic()
+            try:
+                result = await refresh_all(db, _sources(settings))
+                new = sum(n for n in result.values() if n > 0)
+                failed = [k for k, n in result.items() if n < 0]
+                log.info("Quellen abgerufen: %d neu, nicht erreichbar: %s", new, failed or "keine")
+            except Exception:
+                log.exception("Quellenabruf fehlgeschlagen.")
         await asyncio.sleep(60)
 
 
@@ -72,19 +99,23 @@ def create_app() -> FastAPI:
         ]
 
         async def program_today() -> list[dict[str, Any]]:
-            return await build_program(datetime.now(BERLIN))
+            return await build_program(datetime.now(BERLIN), db, _sources(settings))
 
         program = program_today
     else:
         raise ValueError(f"ABEND_PROGRAM={settings.program!r} unbekannt; erlaubt: heute, test.")
     room = Room(rundown, ask_timeout_s=settings.ask_timeout_s)
-    manager = RoomManager(room, db, program=program)
+
+    def on_start(started: list[dict[str, Any]]) -> None:
+        mark_shown(db, started, datetime.now(BERLIN).date())
+
+    manager = RoomManager(room, db, program=program, on_start=on_start)
 
     @asynccontextmanager
     async def lifespan(_app: FastAPI) -> AsyncIterator[None]:
         await manager.start()
         warmup = asyncio.create_task(manager.refresh_program())
-        planner = asyncio.create_task(_morning_loop(db, settings))
+        planner = asyncio.create_task(_background_loop(db, settings))
         yield
         warmup.cancel()
         planner.cancel()

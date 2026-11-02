@@ -1,0 +1,13 @@
+# Asien und Pazifik. Feeds geprüft am 2026-11-02.
+- id: abc-australia
+  name: ABC News
+  url: https://www.abc.net.au/news
+  kind: rss
+  feed: https://www.abc.net.au/news/feed/51120/rss.xml
+  country: [AU]
+  language: en
+  publisher: Australian Broadcasting Corporation
+  funding: öffentlich (Australien)
+  images: true
+  review: offen
+  checked: 2026-11-02

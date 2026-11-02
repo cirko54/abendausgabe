@@ -99,6 +99,10 @@ Einmalig:
 
 Danach bei jeder Änderung `make deploy-nas`, Log mit `make logs-nas`. Wer von einem lokalen Testbetrieb umzieht, übernimmt PINs und Testberichte einmalig mit `make migrate-db-nas`.
 
+## Quellen aus aller Welt
+
+Der Weltblick zeigt jeden Abend Bilder und Kurzvideos aus Quellen weltweit, zum Beispiel aus Indien, Pakistan, Serbien, der Ukraine, Afrika oder Australien, dazu Agenturvideos von Bluesky. Bei zwei Beiträgen raten alle, aus welchem Land die Meldung kommt. Die Quellen stehen im Katalog unter [catalog/](catalog/README.md); welche ein Haushalt nutzt, legt `config/feeds.yaml` fest. Es gibt nur offene Zugänge (RSS, offizielle APIs). Gespeichert werden nur Titel und Links, und das höchstens drei Tage. Neue Quellen für den Katalog gerne per Pull Request.
+
 ## Morgen danach
 
 Am Morgen nach einer Sendung fragt das Handy unter `/c/`: Wie war es gestern (1–5)? Dazu kommt eine Frage zum Vorabend. Die Antworten sind die wichtigste Messgröße der Abendausgabe; Verweildauer zählt nicht. Fragen kommen nach 3, 10 und 30 Tagen als Wiederholung zurück, am Ende der Sendung.

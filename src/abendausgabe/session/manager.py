@@ -23,16 +23,24 @@ log = logging.getLogger(__name__)
 
 
 ProgramBuilder = Callable[[], Awaitable[list[dict[str, Any]]]]
+StartHook = Callable[[list[dict[str, Any]]], None]
 
 PROGRAM_MAX_AGE_S = 120.0
 PROGRAM_TIMEOUT_S = 12.0
 
 
 class RoomManager:
-    def __init__(self, room: Room, db: Database, program: ProgramBuilder | None = None) -> None:
+    def __init__(
+        self,
+        room: Room,
+        db: Database,
+        program: ProgramBuilder | None = None,
+        on_start: StartHook | None = None,
+    ) -> None:
         self.room = room
         self.db = db
         self.program = program
+        self.on_start = on_start
         self._program_built_at: float | None = None
         self._program_lock = asyncio.Lock()
         self.tv_sockets: set[WebSocket] = set()
@@ -145,6 +153,11 @@ class RoomManager:
                         record.ended_at = utcnow()
             s.commit()
         for ev in events:
+            if ev.kind == "session_start" and self.on_start is not None:
+                try:
+                    self.on_start(self.room.rundown)
+                except Exception:  # Nebensache, die Sendung läuft
+                    log.exception("Start-Hook fehlgeschlagen.")
             if ev.kind == "reveal":
                 self._record_quiz(ev.block_id, ev.payload.get("answers", {}), session_id)
 

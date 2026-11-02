@@ -1,0 +1,23 @@
+# Afrika. Feeds geprüft am 2026-11-02.
+- id: africanews
+  name: Africanews
+  url: https://www.africanews.com
+  kind: rss
+  feed: https://www.africanews.com/feed/rss
+  country: [CG]
+  language: en
+  publisher: Euronews
+  note: Sitz in Pointe-Noire, berichtet aus ganz Afrika
+  images: true
+  review: offen
+  checked: 2026-11-02
+- id: premium-times
+  name: Premium Times
+  url: https://www.premiumtimesng.com
+  kind: rss
+  feed: https://www.premiumtimesng.com/feed
+  country: [NG]
+  language: en
+  images: false
+  review: offen
+  checked: 2026-11-02

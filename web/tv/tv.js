@@ -71,6 +71,16 @@
   }
 
   document.addEventListener("keydown", function (event) {
+    const isUp = event.keyCode === 38 || event.key === "ArrowUp";
+    if (player && isUp) {
+      // Ton an/aus für stumm startende Kurzvideos (decisions.md Nr. 48)
+      event.preventDefault();
+      player.video.muted = !player.video.muted;
+      const hint = document.getElementById("vid-hint");
+      if (hint) hint.textContent = (player.video.muted ? "Ton aus · ▲ Ton an" : "Ton an · ▲ Ton aus") + " · OK: Pause · ▶ Weiter";
+      showChrome();
+      return;
+    }
     const isOk = event.keyCode === 13 || event.key === "Enter";
     const isRight = event.keyCode === 39 || event.key === "ArrowRight";
     if (player) showChrome();
@@ -170,6 +180,18 @@
     );
   }
 
+  // Bild und Originalschlagzeile (Weltblick): links das Bild, rechts Text und Antworten.
+  function withMedia(block, inner) {
+    if (!block.media || block.media.kind !== "image") return inner;
+    const lang = block.caption_lang ? ' lang="' + esc(block.caption_lang) + '"' : "";
+    return (
+      '<div class="media-split"><div class="media-pic"><img src="' + esc(block.media.src) +
+      '" alt="" referrerpolicy="no-referrer"></div><div class="media-text">' +
+      (block.caption ? '<p class="caption" dir="auto"' + lang + ">" + esc(block.caption) + "</p>" : "") +
+      inner + "</div></div>"
+    );
+  }
+
   function renderAsk(block) {
     const body =
       block.type === "choice"
@@ -177,7 +199,7 @@
         : '<p class="lead">Schätzt auf dem Handy, in ' + esc(block.unit) + ".</p>";
     return (
       '<div class="screen"><p class="kicker">' + esc(block.title) + "</p>" +
-      "<h1>" + esc(block.question) + "</h1>" + body +
+      withMedia(block, '<h1 class="' + (block.media ? "q-small" : "") + '">' + esc(block.question) + "</h1>" + body) +
       peopleList(state.members, "ask") +
       '<p class="countdown" id="countdown"></p></div>'
     );
@@ -278,7 +300,8 @@
     const source = block.source ? '<p class="source">Quelle: ' + esc(block.source) + "</p>" : "";
     return (
       '<div class="screen" id="reveal"><p class="kicker">Auflösung</p>' +
-      "<h1>" + esc(block.question) + "</h1>" + body + source + "</div>"
+      withMedia(block, '<h1 class="' + (block.media ? "q-small" : "") + '">' + esc(block.question) + "</h1>" + body + source) +
+      "</div>"
     );
   }
 
@@ -326,7 +349,12 @@
       '<div class="vid-top"><p class="kicker" id="vid-title">' + esc(block.title) + "</p>" +
       '<p id="vid-source" class="vid-source">' + source + "</p></div>" +
       '<p id="vid-msg" class="vid-msg">Lädt …</p>' +
-      '<div class="vid-bottom"><span id="vid-hint" class="vid-hint">OK: Pause · ▶ Weiter</span></div>' +
+      (block.caption
+        ? '<p class="vid-caption" dir="auto"' + (block.caption_lang ? ' lang="' + esc(block.caption_lang) + '"' : "") + ">" +
+          esc(block.caption) + "</p>"
+        : "") +
+      '<div class="vid-bottom"><span id="vid-hint" class="vid-hint">' +
+      (block.muted ? "Ton aus · ▲ Ton an · " : "") + "OK: Pause · ▶ Weiter</span></div>" +
       "</div>"
     );
   }
@@ -415,10 +443,9 @@
     const video = player.video;
     const mine = player;
     const native = video.canPlayType("application/vnd.apple.mpegurl");
-    // Mit Anfang und Ende braucht es die Sendezeit je Segment; die liefert hls.js.
-    const wantJs = !native || media.start_at || media.end_at;
-    if (!wantJs) return Promise.resolve(playHlsNative(video, media));
-    return loadHls().then(function (Hls) {
+    // hls.js zuerst: Der eingebaute Player meldete am Fernseher und im Desktop-Chrome
+    // Fehler 4 (decisions.md Nr. 53). Nativ nur, wenn hls.js fehlt oder MSE nicht geht.
+    return loadHls().catch(function () { return null; }).then(function (Hls) {
       if (mine !== player) return "abgebrochen";
       if (!Hls || !Hls.isSupported()) {
         if (native) return playHlsNative(video, media);
@@ -464,6 +491,9 @@
     const video = document.getElementById("vid");
     if (!video) return;
     player = { video: video, hls: null, ended: false, failed: false, endAt: null, dateOffset: null };
+    video.muted = !!block.muted;
+    if (block.poster) video.poster = block.poster;
+    if (block.vertical) video.classList.add("vertical");
     const mine = player;
     let via = "";
 
@@ -504,7 +534,7 @@
       const src = document.getElementById("vid-source");
       if (src && media.attribution) src.textContent = "Quelle: " + media.attribution;
       const hint = document.getElementById("vid-hint");
-      if (hint && media.format === "hls") {
+      if (hint && media.end_at) {
         hint.textContent = (media.live ? "Live" : "Zeitversetzt") + " · OK: Pause · ▶ Weiter";
       }
       mine.endAt = media.end_at || null;

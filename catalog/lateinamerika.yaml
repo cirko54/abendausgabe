@@ -1,0 +1,12 @@
+# Lateinamerika. Feeds geprüft am 2026-11-02.
+- id: mercopress
+  name: MercoPress
+  url: https://en.mercopress.com
+  kind: rss
+  feed: https://en.mercopress.com/rss/
+  country: [UY]
+  language: en
+  note: Sitz in Montevideo, Schwerpunkt Südatlantik und Mercosur; Bilder im Feed sehr klein
+  images: false
+  review: offen
+  checked: 2026-11-02

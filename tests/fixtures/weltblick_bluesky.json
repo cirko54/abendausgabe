@@ -1,0 +1,15 @@
+{"feed": [
+  {"post": {"uri": "at://did:plc:beispiel/app.bsky.feed.post/aaa1", "author": {"handle": "agentur.example"},
+    "record": {"text": "Short video caption from the agency.", "createdAt": "2026-11-02T07:00:00.000Z"},
+    "embed": {"$type": "app.bsky.embed.video#view", "playlist": "https://video.bsky.app/watch/beispiel/playlist.m3u8",
+      "thumbnail": "https://video.bsky.app/watch/beispiel/thumbnail.jpg", "aspectRatio": {"width": 720, "height": 1280}}}},
+  {"post": {"uri": "at://did:plc:beispiel/app.bsky.feed.post/aaa2", "author": {"handle": "agentur.example"},
+    "record": {"text": "Photo of the day.", "createdAt": "2026-11-02T06:00:00.000Z"},
+    "embed": {"$type": "app.bsky.embed.images#view", "images": [{"fullsize": "https://cdn.bsky.app/img/feed_fullsize/beispiel.jpg"}]}}},
+  {"post": {"uri": "at://did:plc:fremd/app.bsky.feed.post/bbb", "author": {"handle": "fremd.example"},
+    "record": {"text": "Reposted.", "createdAt": "2026-11-02T05:00:00.000Z"},
+    "embed": {"$type": "app.bsky.embed.images#view", "images": [{"fullsize": "https://cdn.bsky.app/img/x.jpg"}]}},
+   "reason": {"$type": "app.bsky.feed.defs#reasonRepost"}},
+  {"post": {"uri": "at://did:plc:beispiel/app.bsky.feed.post/aaa3", "author": {"handle": "agentur.example"},
+    "record": {"text": "Text only.", "createdAt": "2026-11-02T04:00:00.000Z"}}}
+]}

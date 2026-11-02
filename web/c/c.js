@@ -320,7 +320,11 @@
     }
     if (state.block_phase === "reveal") {
       const points = you.points == null ? "" : "<p class=\"value\">" + you.points + " Punkte</p>";
-      return "<h1>Auflösung am Fernseher.</h1>" + points;
+      // Weltblick: das Original zum Nachlesen, erst nach der Auflösung (SPEC §3)
+      const link = block && block.link
+        ? '<a class="big" href="' + esc(block.link) + '" target="_blank" rel="noopener noreferrer">Zum Original</a>'
+        : "";
+      return "<h1>Auflösung am Fernseher.</h1>" + points + link;
     }
     return '<h1>Schau auf den Fernseher.</h1><p class="muted">Handy kann weg.</p>';
   }

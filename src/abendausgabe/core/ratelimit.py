@@ -36,6 +36,9 @@ _BUCKETS: dict[str, TokenBucket] = {
     # MediathekViewWeb (Community-Projekt): sparsam, höchstens 30 pro Stunde
     "mediathekviewweb": TokenBucket(capacity=30, per_seconds=3600),
     "ntfy": TokenBucket(capacity=30, per_seconds=3600),
+    # Weltblick (decisions.md Nr. 51): Abruf alle 2 Stunden, je Quelle ein Aufruf
+    "rss": TokenBucket(capacity=120, per_seconds=3600),
+    "bluesky": TokenBucket(capacity=60, per_seconds=3600),
 }
 
 

@@ -6,7 +6,7 @@ NAS_DIR ?= /volume1/docker/abendausgabe
 IMAGE ?= abendausgabe:local
 # Was das NAS zum Bauen braucht; alles andere (android/ mit Signaturschlüssel, data/, .env) bleibt auf dem Mac
 BUILD_FILES = Dockerfile .dockerignore pyproject.toml README.md requirements.lock .env.example \
-              src web config.example deploy
+              src web config.example catalog deploy
 TAR_EXCLUDES = --no-xattrs --no-mac-metadata --exclude='._*' --exclude='.DS_Store' --exclude='__pycache__' --exclude='*.pyc'
 
 .PHONY: dev test lint lock image-amd64 upload-nas deploy-nas migrate-db-nas logs-nas

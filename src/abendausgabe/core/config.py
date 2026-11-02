@@ -35,12 +35,14 @@ class Settings:
     example_config_dir: Path
     data_dir: Path
     web_dir: Path
+    catalog_dir: Path
     ask_timeout_s: float
     youtube_test_id: str
     cookie_secure: bool
     program: str  # heute | test
     ntfy_url: str
     morning_push: time | None  # None: kein Morgen-Push
+    youtube_api_key: str
 
 
 @lru_cache
@@ -50,12 +52,14 @@ def get_settings() -> Settings:
         example_config_dir=_env_path("ABEND_EXAMPLE_CONFIG_DIR", PROJECT_ROOT / "config.example"),
         data_dir=_env_path("ABEND_DATA_DIR", PROJECT_ROOT / "data"),
         web_dir=_env_path("ABEND_WEB_DIR", PROJECT_ROOT / "web"),
+        catalog_dir=_env_path("ABEND_CATALOG_DIR", PROJECT_ROOT / "catalog"),
         ask_timeout_s=float(os.environ.get("ABEND_ASK_TIMEOUT_S", "45")),
         youtube_test_id=os.environ.get("ABEND_YOUTUBE_TEST_ID", "jNQXAC9IVRw"),
         cookie_secure=_env_bool("ABEND_COOKIE_SECURE", False),
         program=os.environ.get("ABEND_PROGRAM", "heute").strip().lower(),
         ntfy_url=os.environ.get("ABEND_NTFY_URL", "https://ntfy.sh").strip().rstrip("/"),
         morning_push=_env_time("ABEND_MORNING_PUSH", "08:30"),
+        youtube_api_key=os.environ.get("ABEND_YOUTUBE_API_KEY", "").strip(),
     )
 
 

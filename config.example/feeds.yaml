@@ -1,0 +1,7 @@
+# Welche Quellen aus dem Katalog (catalog/*.yaml) dieser Haushalt nutzt.
+# sources: "alle" oder eine Liste aus Quellen-IDs und Dateinamen ohne .yaml (z. B. balkan).
+sources: alle
+# Einzelne Quellen ausschließen
+exclude: []
+# Eigene Quellen im selben Format wie im Katalog
+extra: []

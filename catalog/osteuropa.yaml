@@ -1,0 +1,33 @@
+# Osteuropa. Feeds geprüft am 2026-11-02.
+- id: kyiv-independent
+  name: The Kyiv Independent
+  url: https://kyivindependent.com
+  kind: rss
+  feed: https://kyivindependent.com/news-archive/rss/
+  country: [UA]
+  language: en
+  images: true
+  review: offen
+  checked: 2026-11-02
+- id: kyiv-independent-bsky
+  name: The Kyiv Independent (Bluesky)
+  url: https://bsky.app/profile/kyivindependent.com
+  kind: bluesky
+  actor: kyivindependent.com
+  country: [UA]
+  language: en
+  images: true
+  video: true
+  review: offen
+  checked: 2026-11-02
+- id: meduza
+  name: Meduza
+  url: https://meduza.io/en
+  kind: rss
+  feed: https://meduza.io/rss/en/all
+  country: [RU]
+  language: en
+  note: Exilmedium mit Sitz in Riga
+  images: true
+  review: offen
+  checked: 2026-11-02

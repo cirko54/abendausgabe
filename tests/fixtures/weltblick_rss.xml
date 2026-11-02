@@ -1,0 +1,31 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<rss version="2.0" xmlns:media="http://search.yahoo.com/mrss/">
+<channel>
+  <title>Beispielzeitung</title>
+  <language>sr</language>
+  <item>
+    <title>Naslov prve vesti</title>
+    <link>http://example.org/vesti/1</link>
+    <pubDate>Mon, 02 Nov 2026 06:00:00 GMT</pubDate>
+    <media:content url="https://img.example.org/1-small.jpg" medium="image" width="140"/>
+    <media:content url="https://img.example.org/1-large.jpg" medium="image" width="1200"/>
+  </item>
+  <item>
+    <title>Druga vest bez slike</title>
+    <link>https://example.org/vesti/2</link>
+    <pubDate>Mon, 02 Nov 2026 05:00:00 GMT</pubDate>
+  </item>
+  <item>
+    <title>Treća vest sa malom slikom</title>
+    <link>https://example.org/vesti/3</link>
+    <pubDate>Mon, 02 Nov 2026 04:00:00 GMT</pubDate>
+    <enclosure url="https://img.example.org/cache/100x80/3.jpg" type="image/jpeg"/>
+  </item>
+  <item>
+    <title>BBC-artige Vorschau</title>
+    <link>https://example.org/vesti/4</link>
+    <pubDate>Mon, 02 Nov 2026 03:00:00 GMT</pubDate>
+    <media:thumbnail url="https://ichef.bbci.co.uk/ace/ws/240/cpsprodpb/abc/4.jpg" width="240"/>
+  </item>
+</channel>
+</rss>

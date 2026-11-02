@@ -1,0 +1,54 @@
+# Balkan. Feeds geprüft am 2026-11-02.
+- id: bbc-serbian
+  name: BBC News na srpskom
+  url: https://www.bbc.com/serbian/lat
+  kind: rss
+  feed: https://feeds.bbci.co.uk/serbian/lat/rss.xml
+  country: [RS]
+  language: sr
+  publisher: BBC World Service
+  funding: öffentlich (Vereinigtes Königreich)
+  images: true
+  review: offen
+  checked: 2026-11-02
+- id: n1-srbija
+  name: N1 Srbija
+  url: https://n1info.rs
+  kind: rss
+  feed: https://n1info.rs/feed/
+  country: [RS]
+  language: sr
+  images: true
+  review: offen
+  checked: 2026-11-02
+- id: danas
+  name: Danas
+  url: https://www.danas.rs
+  kind: rss
+  feed: https://www.danas.rs/feed/
+  country: [RS]
+  language: sr
+  images: true
+  review: offen
+  checked: 2026-11-02
+- id: vreme
+  name: Vreme
+  url: https://vreme.com
+  kind: rss
+  feed: https://vreme.com/feed/
+  country: [RS]
+  language: sr
+  images: false
+  review: offen
+  checked: 2026-11-02
+- id: balkan-insight
+  name: Balkan Insight
+  url: https://balkaninsight.com
+  kind: rss
+  feed: https://balkaninsight.com/feed/
+  country: [RS, BA, XK, MK, AL, ME]
+  language: en
+  publisher: BIRN (Balkan Investigative Reporting Network)
+  images: true
+  review: offen
+  checked: 2026-11-02

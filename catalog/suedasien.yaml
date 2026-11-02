@@ -1,0 +1,114 @@
+# Südasien. Feeds geprüft am 2026-11-02 (Bilder im Feed: ja/nein in `images`).
+- id: bbc-hindi
+  name: BBC News हिन्दी
+  url: https://www.bbc.com/hindi
+  kind: rss
+  feed: https://feeds.bbci.co.uk/hindi/rss.xml
+  country: [IN]
+  language: hi
+  publisher: BBC World Service
+  funding: öffentlich (Vereinigtes Königreich)
+  images: true
+  review: offen
+  checked: 2026-11-02
+- id: bbc-urdu
+  name: BBC News اردو
+  url: https://www.bbc.com/urdu
+  kind: rss
+  feed: https://feeds.bbci.co.uk/urdu/rss.xml
+  country: [PK]
+  language: ur
+  publisher: BBC World Service
+  funding: öffentlich (Vereinigtes Königreich)
+  images: true
+  review: offen
+  checked: 2026-11-02
+- id: ndtv
+  name: NDTV
+  url: https://www.ndtv.com
+  kind: rss
+  feed: https://feeds.feedburner.com/ndtvnews-top-stories
+  country: [IN]
+  language: en
+  publisher: New Delhi Television
+  images: true
+  review: offen
+  checked: 2026-11-02
+- id: scroll
+  name: Scroll.in
+  url: https://scroll.in
+  kind: rss
+  feed: https://feeds.feedburner.com/ScrollinArticles.rss
+  country: [IN]
+  language: en
+  images: true
+  review: offen
+  checked: 2026-11-02
+- id: mongabay-india
+  name: Mongabay India
+  url: https://india.mongabay.com
+  kind: rss
+  feed: https://india.mongabay.com/feed/
+  country: [IN]
+  language: en
+  publisher: Mongabay
+  funding: gemeinnützig
+  topics: [umwelt]
+  images: true
+  review: offen
+  checked: 2026-11-02
+- id: bollywood-hungama
+  name: Bollywood Hungama
+  url: https://www.bollywoodhungama.com
+  kind: rss
+  feed: https://www.bollywoodhungama.com/feed/
+  country: [IN]
+  language: en
+  topics: [showbiz]
+  images: false
+  review: offen
+  checked: 2026-11-02
+- id: dawn
+  name: Dawn
+  url: https://www.dawn.com
+  kind: rss
+  feed: https://www.dawn.com/feeds/home
+  country: [PK]
+  language: en
+  publisher: Dawn Media Group
+  images: true
+  review: offen
+  checked: 2026-11-02
+- id: amu-tv
+  name: Amu TV
+  url: https://amu.tv
+  kind: rss
+  feed: https://amu.tv/feed/
+  country: [AF]
+  language: en
+  note: Exilmedium (SPEC §8.3); Herkunft in der Sendung kennzeichnen
+  images: false
+  review: offen
+  checked: 2026-11-02
+- id: hasht-e-subh
+  name: Hasht-e Subh
+  url: https://8am.media/eng/
+  kind: rss
+  feed: https://8am.media/eng/feed/
+  country: [AF]
+  language: en
+  note: Exilmedium
+  images: false
+  review: offen
+  checked: 2026-11-02
+- id: rukhshana
+  name: Rukhshana Media
+  url: https://rukhshana.com/en
+  kind: rss
+  feed: https://rukhshana.com/en/feed
+  country: [AF]
+  language: en
+  note: berichtet über Frauen in Afghanistan
+  images: false
+  review: offen
+  checked: 2026-11-02

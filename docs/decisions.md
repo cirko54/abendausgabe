@@ -229,3 +229,30 @@ Offen für Phase 1: TV-Ergebnis hier eintragen, Router-Typ (Präsenz), Kalenderq
     - Folge: Die Antwortseite liegt im LAN. Von unterwegs öffnet der Link nichts; die Karte wartet dann bis zum Abend (Nr. 45). /ext/morning kommt mit der internetfähigen Instanz (Nr. 22).
     Planer: eine schlanke asyncio-Schleife im Server, die einmal pro Minute prüft. APScheduler (CLAUDE.md, Stack) bleibt draußen, bis mehrere zeitgesteuerte Aufgaben ihn rechtfertigen; keine neue Abhängigkeit.
     Abnahme Schritt 3 (Nr. 23): Eine echte Sendung mit tagesschau; am nächsten Morgen kommt der Push, und Bewertung und Abruffrage landen in der Datenbank. Nach 3 Tagen erscheint die Frage als Wiederholung.
+
+## 2026-11-02 – Neue Reihenfolge: die Welt zuerst
+
+47. Auf Wunsch des Projektinhabers kommt die Welt vor der Paper-Wette. Sie ist der Kern der Idee (SPEC §2.1); die Paper-Wette ist ein Spezialthema des Referenzhaushalts. Neue Reihenfolge ab Schritt 4:
+    4. Welt I, ohne LLM: Quellenkatalog mit Metadaten, Abruf im Hintergrund, Block „Weltblick“ mit Bildern und Kurzvideos, dazu „Mitbringsel“: Links, die Personen per Handy einreichen (auch TikTok, Instagram, Reddit, eingebettet über den offiziellen oEmbed).
+    5. Redaktion mit LLM: Übersetzung, Untertitel, gleiche Geschichte über Quellen hinweg (Blickwinkel), Ort und Karte (Weltecke), Inhaltsfragen zur tagesschau fürs Abschlussquiz (Nr. 44).
+    6. Paper-Wette. 7. Assembler mit Regeln, Kalender, Check-in und dosiertem Fenster.
+
+48. Bilder und Kurzvideos. Zum Abend gehört Bewegtbild; Text allein verliert gegen den Feed. Woher sie kommen:
+    - Bilder liefern viele Nachrichten-Feeds gleich mit (media:content bzw. enclosure). Stand 2.11.2026 bei über 20 von 30 geprüften Feeds, darunter Hindi, Urdu und Serbisch.
+    - Kurzvideos kommen von Bluesky. Die öffentliche API ist offen, ohne Konto. Medienhäuser posten dort Videos als HLS (geprüft: Reuters 14 und AP 24 von je 30 Posts), und die spielt derselbe Player wie die tagesschau.
+    - Alles wird nur verlinkt, nie heruntergeladen (CLAUDE.md). Gespeichert werden Titel, Links und Metadaten mit Ablaufzeit.
+    - Ton: Kurzvideos starten stumm, wenn der Beitrag Untertitel oder eine Bildunterschrift hat. OK schaltet den Ton ein. Jeder Weltblick hat eine feste Zahl von Beiträgen und endet; nichts läuft automatisch weiter (SPEC §3 Nr. 1).
+
+49. YouTube: Der Kanal-Feed (feeds/videos.xml) antwortet vom Mac aus 8 von 8 Mal mit 404. Seit Ende 2025 wird das häufig gemeldet; eine offizielle Abschaltung gibt es nicht. Deshalb ist der YouTube-Abruf nur optional: über die offizielle Data API v3 mit `ABEND_YOUTUBE_API_KEY`. Die API ist kostenlos, Kontingent 10.000 Einheiten pro Tag, eine Kanalabfrage kostet 1 Einheit. Ohne Schlüssel fehlen YouTube-Kanäle, sonst nichts. Abgespielt wird nur über den offiziellen IFrame-Player.
+
+50. Geschlossene Plattformen bleiben ohne Kernmodul (Invariante, Nr. 31). Ein Abruf von TikTok, Instagram oder Reddit nach Konto oder Hashtag findet nicht statt. Einzelne Beiträge kommen als Mitbringsel: Eine Person teilt einen Link, der Server holt die offizielle oEmbed-Einbettung. Geprüft am 2.11.2026: TikTok, Instagram und Reddit antworten. Klappt die Einbettung am Fernseher nicht, kommt eine Karte mit Vorschaubild, Quelle und QR-Code zum Original.
+
+51. Neue Abhängigkeit feedparser 6.0 (BSD-2-Clause, in CLAUDE.md als Stack vorgesehen) für RSS und Atom. Neue Tabelle `raw_item` (SPEC §12): Abruf alle 2 Stunden im Server. Der Tagesablauf wählt beim Sendestart aus der Datenbank, damit der Start nicht auf 30 Feeds wartet.
+
+52. Quellenkatalog (catalog/, Format nach catalog/README.md): Erstausstattung mit geprüften Feeds aus Südasien (Indien, Pakistan, Afghanistan), Balkan, Afrika, Osteuropa, Asien-Pazifik, Lateinamerika und globalen Medien. Je Quelle ist der Feed geprüft (Datum in `checked`). Den Träger trage ich nur ein, wo er allgemein bekannt ist. Die Perspektive bleibt leer, bis ein Beleg vorliegt (Regel im Katalog); `review: offen` markiert das.
+    Weltblick ohne LLM: Drei Beiträge aus verschiedenen Ländern, je mit Bild oder Video und Originalschlagzeile. Die Frage lautet „Aus welchem Land kommt diese Meldung?“, mit drei Ländern zur Auswahl, Auflösung mit Quelle und Link. Bis zur Übersetzung (Schritt 5) bleiben fremdsprachige Schlagzeilen im Original; die Sprache ist dann selbst ein Hinweis.
+
+53. HLS spielt jetzt immer zuerst über hls.js, der eingebaute Player ist nur Rückfall. Grund: Am Fernseher meldete der eingebaute Player am 1.11. um 20:08 Fehler 4 (Nr. 42). Im Desktop-Chrome scheiterte er am 2.11. reproduzierbar an einem Bluesky-Video, ebenfalls mit Fehler 4; hls.js spielte dasselbe Video. Nr. 41 („nativ zuerst“) ist damit überholt.
+    Stand Weltblick, Teil 1 (2.11.2026): Katalog mit 28 Quellen; alle waren beim ersten Abruf erreichbar. Im Headless-Chrome geprüft: Raterunde mit Bild und serbischer Originalschlagzeile, Auflösung mit Quelle, am Handy der Link „Zum Original“, Kurzvideo von Reuters hochkant, stumm mit Text, ▲ schaltet den Ton ein.
+    Reihenfolge im Ablauf: Begrüßung, Wetter, tagesschau, Weltblick, Wiederholung, Sendeschluss. Erst die eigene Nachrichtensicht, dann die der anderen.
+    Offen in Schritt 4: Mitbringsel (Nr. 50), Test am Fernseher.

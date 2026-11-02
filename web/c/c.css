@@ -60,3 +60,4 @@ body.rest .app { justify-content: center; align-items: center; color: #3a4a5c; }
 h2.recall { font-size: 21px; line-height: 1.25; margin: 26px 0 4px; }
 .big.picked { border-color: var(--text); }
 .small-value { font-size: 24px; }
+a.big { box-sizing: border-box; text-align: center; text-decoration: none; color: var(--text); }

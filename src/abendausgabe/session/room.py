@@ -16,7 +16,7 @@ from typing import Any
 
 ASK_TYPES = {"estimate", "choice"}
 SIGNAL_KINDS = {"too_easy", "too_hard"}
-HIDDEN_UNTIL_REVEAL = {"truth", "correct", "source"}
+HIDDEN_UNTIL_REVEAL = {"truth", "correct", "source", "link"}
 
 
 @dataclass

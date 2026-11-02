@@ -1,0 +1,72 @@
+# Weltweit berichtende Medien. Ohne festes Land: im Weltblick als Kurzvideo, nicht im Länderraten.
+- id: reuters-bsky
+  name: Reuters (Bluesky)
+  url: https://bsky.app/profile/reuters.com
+  kind: bluesky
+  actor: reuters.com
+  country: []
+  language: en
+  publisher: Thomson Reuters
+  images: true
+  video: true
+  review: offen
+  checked: 2026-11-02
+- id: ap-bsky
+  name: The Associated Press (Bluesky)
+  url: https://bsky.app/profile/apnews.com
+  kind: bluesky
+  actor: apnews.com
+  country: []
+  language: en
+  publisher: The Associated Press
+  funding: Genossenschaft
+  images: true
+  video: true
+  review: offen
+  checked: 2026-11-02
+- id: aljazeera-bsky
+  name: Al Jazeera (Bluesky)
+  url: https://bsky.app/profile/aljazeera.com
+  kind: bluesky
+  actor: aljazeera.com
+  country: []
+  language: en
+  publisher: Al Jazeera Media Network
+  funding: staatlich (Katar)
+  images: true
+  review: offen
+  checked: 2026-11-02
+- id: guardian-world
+  name: The Guardian, World
+  url: https://www.theguardian.com/world
+  kind: rss
+  feed: https://www.theguardian.com/world/rss
+  country: []
+  language: en
+  publisher: Guardian Media Group (Scott Trust)
+  images: true
+  review: offen
+  checked: 2026-11-02
+- id: global-voices
+  name: Global Voices
+  url: https://globalvoices.org
+  kind: rss
+  feed: https://globalvoices.org/feed/
+  country: []
+  language: en
+  funding: gemeinnützig
+  images: true
+  review: offen
+  checked: 2026-11-02
+- id: rest-of-world
+  name: Rest of World
+  url: https://restofworld.org
+  kind: rss
+  feed: https://restofworld.org/feed/latest/
+  country: []
+  language: en
+  funding: gemeinnützig
+  topics: [technik]
+  images: true
+  review: offen
+  checked: 2026-11-02
