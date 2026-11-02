@@ -256,3 +256,10 @@ Offen für Phase 1: TV-Ergebnis hier eintragen, Router-Typ (Präsenz), Kalenderq
     Stand Weltblick, Teil 1 (2.11.2026): Katalog mit 28 Quellen; alle waren beim ersten Abruf erreichbar. Im Headless-Chrome geprüft: Raterunde mit Bild und serbischer Originalschlagzeile, Auflösung mit Quelle, am Handy der Link „Zum Original“, Kurzvideo von Reuters hochkant, stumm mit Text, ▲ schaltet den Ton ein.
     Reihenfolge im Ablauf: Begrüßung, Wetter, tagesschau, Weltblick, Wiederholung, Sendeschluss. Erst die eigene Nachrichtensicht, dann die der anderen.
     Offen in Schritt 4: Mitbringsel (Nr. 50), Test am Fernseher.
+
+## 2026-11-02 – LLM zunächst nur lokal
+
+54. Entscheidung des Projektinhabers: Die Redaktion (Schritt 5) läuft zunächst nur mit einem lokalen Modell auf dem Mac mini (M4 Pro), ohne Claude-Budget. Kosten: nur Strom; es verlassen keine Daten das Haus.
+    Je nach Qualität und Leidensdruck wird später neu entschieden. Die Anbieter-Schnittstelle (SPEC §11.3) bleibt, damit Claude Haiku ohne Umbau zuschaltbar ist. Die Schätzung vom 2.11.: unter 1 € pro Monat mit Haiku 5.5, 2–5 € mit Sonnet 5.5; Batch-API halbiert.
+    Faktenprüfung (Invariante) gilt unverändert: Zahlen und Zitate werden per String-Match gegen den Quelltext geprüft.
+    Verworfen für jetzt: paralleler Vergleich mit Haiku in der ersten Woche.
