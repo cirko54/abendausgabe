@@ -51,6 +51,8 @@ Dem Server in der Router-Oberfläche eine feste IP geben, sonst findet der Ferns
 
 Auf Android TV und Google TV läuft am besten die eigene App aus [android/](android/README.md): eine schlanke WebView-Hülle mit Kachel auf dem Startbildschirm. Die Fernbedienung erreicht damit die Seite. Jeder Haushalt baut die App selbst und signiert sie mit einem eigenen Schlüssel. Der eingebaute TV-Browser funktioniert als Rückfallebene, ist im Alltag aber umständlich.
 
+Fernbedienung im Video: OK hält an, ◀ ▶ spulen, ▲ schaltet den Ton, ▼ geht zum nächsten Beitrag.
+
 Andere Fernseher (Fire TV, Tizen, webOS): bitte `/tv/check.html` laufen lassen und das Ergebnis als Issue melden.
 
 ## Eigene Instanz neben dem Repo

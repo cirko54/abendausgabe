@@ -263,3 +263,13 @@ Offen für Phase 1: TV-Ergebnis hier eintragen, Router-Typ (Präsenz), Kalenderq
     Je nach Qualität und Leidensdruck wird später neu entschieden. Die Anbieter-Schnittstelle (SPEC §11.3) bleibt, damit Claude Haiku ohne Umbau zuschaltbar ist. Die Schätzung vom 2.11.: unter 1 € pro Monat mit Haiku 5.5, 2–5 € mit Sonnet 5.5; Batch-API halbiert.
     Faktenprüfung (Invariante) gilt unverändert: Zahlen und Zitate werden per String-Match gegen den Quelltext geprüft.
     Verworfen für jetzt: paralleler Vergleich mit Haiku in der ersten Woche.
+
+## 2026-11-02 – Spulen im Video
+
+55. Rückmeldung des Haushalts: In der tagesschau ist der Sportteil aus Rechtegründen oft nicht zu sehen; man will darüber hinwegspulen. Neue Tastenbelegung im Video, wie bei Fernsehern üblich:
+    - ◀ 15 s zurück, ▶ 30 s vor; die Medientasten Rückspulen und Vorspulen tun dasselbe.
+    - OK und Play/Pause halten an bzw. spielen weiter; ▲ schaltet den Ton.
+    - ▼ (oder „Nächster Titel“) geht zum nächsten Beitrag. Nach dem Ende gehen auch OK und ▶ weiter.
+    Zeitversetzt spult man nicht vor den Sendebeginn zurück und vorwärts nicht ganz an die Live-Kante. Wer nach dem Sendeende zurückspult, kann weiterschauen.
+    Zeitanzeige und Fortschrittsbalken erscheinen mit der Leiste. Nr. 37 („Weiter mit Pfeil rechts“) ist damit für Videos überholt; das Handy behält „Weiter“ für Admins.
+    Im Headless-Chrome geprüft mit der MP4-Aufzeichnung: +30 s, −15 s, Anzeige „0:18 / 15:37“, ▼ wechselt zum Weltblick. Zeitversetzt (hls.js) noch ungetestet.

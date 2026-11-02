@@ -70,29 +70,43 @@
     if (ws && ws.readyState === 1) ws.send(JSON.stringify(message));
   }
 
+  // Tasten im Video (decisions.md Nr. 55): OK Pause, ◀ ▶ spulen, ▼ weiter, ▲ Ton.
+  // Ein versehentliches OK soll die Nachrichten nicht überspringen.
+  const KEYS = {
+    ok: [13], up: [38], down: [40], left: [37], right: [39],
+    rewind: [89, 227], forward: [90, 228], playPause: [179, 85], next: [176, 87],
+  };
+  const KEY_NAMES = {
+    Enter: "ok", ArrowUp: "up", ArrowDown: "down", ArrowLeft: "left", ArrowRight: "right",
+    MediaRewind: "rewind", MediaFastForward: "forward", MediaPlayPause: "playPause",
+    MediaTrackNext: "next",
+  };
+
+  function keyOf(event) {
+    if (KEY_NAMES[event.key]) return KEY_NAMES[event.key];
+    for (const name in KEYS) if (KEYS[name].indexOf(event.keyCode) >= 0) return name;
+    return "";
+  }
+
   document.addEventListener("keydown", function (event) {
-    const isUp = event.keyCode === 38 || event.key === "ArrowUp";
-    if (player && isUp) {
-      // Ton an/aus für stumm startende Kurzvideos (decisions.md Nr. 48)
+    const key = keyOf(event);
+    if (player && key) {
       event.preventDefault();
-      player.video.muted = !player.video.muted;
-      const hint = document.getElementById("vid-hint");
-      if (hint) hint.textContent = (player.video.muted ? "Ton aus · ▲ Ton an" : "Ton an · ▲ Ton aus") + " · OK: Pause · ▶ Weiter";
       showChrome();
+      if (key === "up") toggleSound();
+      else if (key === "left" || key === "rewind") seek(-SEEK_BACK_S);
+      else if (key === "right" || key === "forward") {
+        if (player.ended || player.failed) send({ type: "ok" });
+        else seek(SEEK_FORWARD_S);
+      } else if (key === "down" || key === "next") send({ type: "ok" });
+      else if (key === "playPause") togglePlay();
+      else if (key === "ok") {
+        if (player.ended || player.failed) send({ type: "ok" });
+        else togglePlay();
+      }
       return;
     }
-    const isOk = event.keyCode === 13 || event.key === "Enter";
-    const isRight = event.keyCode === 39 || event.key === "ArrowRight";
-    if (player) showChrome();
-    if (player && (isOk || isRight)) {
-      // Im Video: OK pausiert bzw. spielt weiter, damit ein versehentliches OK
-      // die Nachrichten nicht überspringt. Weiter mit Pfeil rechts oder nach dem Ende.
-      event.preventDefault();
-      if (isRight || player.ended || player.failed) send({ type: "ok" });
-      else togglePlay();
-      return;
-    }
-    if (isOk) {
+    if (key === "ok") {
       event.preventDefault();
       send({ type: "ok" });
     }
@@ -349,12 +363,15 @@
       '<div class="vid-top"><p class="kicker" id="vid-title">' + esc(block.title) + "</p>" +
       '<p id="vid-source" class="vid-source">' + source + "</p></div>" +
       '<p id="vid-msg" class="vid-msg">Lädt …</p>' +
+      '<p id="vid-flash" class="vid-flash"></p>' +
+      '<div class="vid-progress"><span id="vid-time" class="vid-time"></span>' +
+      '<div class="vid-track"><div id="vid-bar" class="vid-bar"></div></div></div>' +
       (block.caption
         ? '<p class="vid-caption" dir="auto"' + (block.caption_lang ? ' lang="' + esc(block.caption_lang) + '"' : "") + ">" +
           esc(block.caption) + "</p>"
         : "") +
       '<div class="vid-bottom"><span id="vid-hint" class="vid-hint">' +
-      (block.muted ? "Ton aus · ▲ Ton an · " : "") + "OK: Pause · ▶ Weiter</span></div>" +
+      hintText(!!block.muted, "") + "</span></div>" +
       "</div>"
     );
   }
@@ -403,6 +420,75 @@
     try { player.video.pause(); } catch (e) { /* schon weg */ }
     player.video.removeAttribute("src");
     player = null;
+  }
+
+  const SEEK_BACK_S = 15;
+  const SEEK_FORWARD_S = 30;
+
+  function hintText(muted, mode) {
+    return (mode ? mode + " · " : "") + (muted ? "▲ Ton an · " : "") +
+      "OK: Pause · ◀ ▶ Spulen · ▼ Weiter";
+  }
+
+  function toggleSound() {
+    player.video.muted = !player.video.muted;
+    const hint = document.getElementById("vid-hint");
+    if (hint) hint.textContent = hintText(player.video.muted, player.endAt ? "Zeitversetzt" : "");
+    flash(player.video.muted ? "Ton aus" : "Ton an");
+  }
+
+  function flash(text) {
+    const el = document.getElementById("vid-flash");
+    if (!el) return;
+    el.textContent = text;
+    el.classList.add("on");
+    clearTimeout(flash.timer);
+    flash.timer = setTimeout(function () { el.classList.remove("on"); }, 900);
+  }
+
+  // Spielbereich in Sekunden: bei zeitversetzter Sendung ab Sendebeginn, sonst die Datei
+  function bounds() {
+    const v = player.video;
+    let lo = 0;
+    let hi = isFinite(v.duration) ? v.duration - 1 : v.currentTime;
+    if (v.seekable && v.seekable.length) {
+      lo = v.seekable.start(0);
+      hi = v.seekable.end(v.seekable.length - 1) - 3; // nicht ganz an die Live-Kante
+    }
+    const at = positionDate();
+    if (player.startAt && at != null) {
+      lo = Math.max(lo, v.currentTime - (at - player.startAt * 1000) / 1000);
+    }
+    return [lo, Math.max(lo, hi)];
+  }
+
+  function seek(delta) {
+    const v = player.video;
+    const range = bounds();
+    v.currentTime = Math.max(range[0], Math.min(v.currentTime + delta, range[1]));
+    flash((delta > 0 ? "+" : "−") + Math.abs(delta) + " s");
+    updateTime();
+  }
+
+  function mmss(sec) {
+    sec = Math.max(0, Math.floor(sec));
+    return Math.floor(sec / 60) + ":" + String(sec % 60).padStart(2, "0");
+  }
+
+  function updateTime() {
+    const el = document.getElementById("vid-time");
+    if (!el || !player) return;
+    const v = player.video;
+    const at = positionDate();
+    let now = v.currentTime;
+    let total = isFinite(v.duration) ? v.duration : 0;
+    if (player.startAt && at != null) {
+      now = (at - player.startAt * 1000) / 1000;
+      total = player.endAt ? player.endAt - player.startAt : 0;
+    }
+    el.textContent = total ? mmss(now) + " / " + mmss(total) : "";
+    const bar = document.getElementById("vid-bar");
+    if (bar) bar.style.transform = "scaleX(" + (total ? Math.min(1, now / total) : 0) + ")";
   }
 
   function togglePlay() {
@@ -490,7 +576,9 @@
   function startVideo(block) {
     const video = document.getElementById("vid");
     if (!video) return;
-    player = { video: video, hls: null, ended: false, failed: false, endAt: null, dateOffset: null };
+    player = {
+      video: video, hls: null, ended: false, failed: false, endAt: null, startAt: null, dateOffset: null,
+    };
     video.muted = !!block.muted;
     if (block.poster) video.poster = block.poster;
     if (block.vertical) video.classList.add("vertical");
@@ -511,7 +599,13 @@
       report("ended", { via: via });
     });
     // Livestream: am Ende der Sendung anhalten, statt ins nächste Programm zu laufen.
+    video.addEventListener("seeking", function () {
+      if (mine !== player || !mine.ended) return;
+      mine.ended = false; // zurückgespult: Das Ende gilt nicht mehr
+      setMsg("");
+    });
     video.addEventListener("timeupdate", function () {
+      if (mine === player) updateTime();
       if (mine !== player || mine.ended || !mine.endAt) return;
       const at = positionDate();
       if (at == null || at < mine.endAt * 1000) return;
@@ -535,9 +629,10 @@
       if (src && media.attribution) src.textContent = "Quelle: " + media.attribution;
       const hint = document.getElementById("vid-hint");
       if (hint && media.end_at) {
-        hint.textContent = (media.live ? "Live" : "Zeitversetzt") + " · OK: Pause · ▶ Weiter";
+        hint.textContent = hintText(player.video.muted, media.live ? "Live" : "Zeitversetzt");
       }
       mine.endAt = media.end_at || null;
+      mine.startAt = media.start_at || null;
       const ready = media.format === "hls" ? playHls(media) : Promise.resolve(playFile(video, media.src));
       ready
         .then(function (how) {
