@@ -78,7 +78,7 @@ async def share(
         item = store.add(db, identity.person_id, resolved, body.note, now)
     except store.LimitError as exc:
         raise HTTPException(status_code=429, detail=str(exc)) from exc
-    return {"item": item}
+    return {"item": item, "notice": resolved.extra.get("notice")}
 
 
 @router.delete("/{item_id}")

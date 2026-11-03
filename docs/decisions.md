@@ -302,3 +302,11 @@ Offen für Phase 1: TV-Ergebnis hier eintragen, Router-Typ (Präsenz), Kalenderq
 
 59. Rückmeldung des Haushalts: Es soll eine Möglichkeit geben, die Sendung neu zu starten. Admins haben am Handy jetzt den Knopf „Von vorn“, während die Sendung läuft und nach dem Sendeschluss. Die Sendung beginnt dann mit demselben Ablauf und denselben Anwesenden wieder beim ersten Beitrag; Punkte und Antworten beginnen neu, in der Datenbank zählt das als neue Sitzung. Mitbringsel bleiben im Ablauf, weil er nicht neu zusammengestellt wird.
     Verworfen: neu starten über die Lobby. Dann würde der Ablauf neu gebaut, und die Mitbringsel fielen heraus, weil sie beim ersten Start schon als gezeigt gelten. „Von vorn“ ist eine bewusste Admin-Aktion; OK am Fernseher startet nach dem Sendeschluss weiterhin nichts.
+
+## 2026-11-03 – Einbettungen am Fernseher geprüft
+
+60. Rückmeldung des Haushalts: Mitbringsel von YouTube und Reddit liefen nicht. Am Fernseher (Android-TV-App, per adb) mit einem eigenen Testserver nachgestellt:
+    - YouTube spielt eingebettet von selbst und mit Ton (Big Buck Bunny).
+    - Reddit zeigt den Beitrag. Ein Reddit-Video startet aber erst nach einem Klick auf Play, und die Fernbedienung erreicht die fremde Einbettung nicht. Dasselbe gilt für Instagram.
+    Vermutete Ursache bei YouTube: Der Uploader hat das Einbetten verboten. Der Player zeigt dann nur „Video nicht verfügbar“. Annahme: YouTube-oEmbed antwortet in diesem Fall mit 401, bei privaten oder gelöschten Videos mit 404. Mit einem echten Beispiel bestätigen. Solche Links werden jetzt schon beim Teilen erkannt. Statt der Einbettung kommt eine Karte mit Vorschaubild und Titel, und das Handy sagt es sofort.
+    Offen für Reddit, Instagram und TikTok: Die TV-App könnte auf OK einen echten Tipp in die Bildmitte auslösen (Brücke zwischen Seite und App). Dafür muss die App neu gebaut werden.

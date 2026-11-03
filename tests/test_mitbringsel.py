@@ -252,3 +252,15 @@ def test_share_photo_and_text_api(client: TestClient) -> None:
     assert text.json()["item"]["provider"] == "Gedanke"
     empty = client.post("/api/mitbringsel", headers=auth(token), json={})
     assert empty.status_code == 422
+
+
+@pytest.mark.anyio
+async def test_youtube_without_embedding_becomes_card() -> None:
+    def handler(request: httpx.Request) -> httpx.Response:
+        return httpx.Response(401, text="Unauthorized")
+
+    async with resolve.make_client(httpx.MockTransport(handler)) as client:
+        r = await resolve.resolve("https://www.youtube.com/watch?v=jNQXAC9IVRw", client)
+    assert r.kind == "link" and r.embed_src is None
+    assert r.image == "https://i.ytimg.com/vi/jNQXAC9IVRw/hqdefault.jpg"
+    assert "kein Abspielen" in r.extra["notice"]

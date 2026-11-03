@@ -67,6 +67,11 @@ def _clean(text: Any) -> str:
     return re.sub(r"\s+", " ", html.unescape(str(text or ""))).strip()[:MAX_TITLE]
 
 
+# YouTube-oEmbed antwortet mit 401, wenn der Uploader das Einbetten verboten hat,
+# und mit 404 bei privaten oder gelöschten Videos (decisions.md Nr. 60).
+NOT_EMBEDDABLE = "not_embeddable"
+
+
 async def _oembed(client: httpx.AsyncClient, endpoint: str, url: str) -> dict[str, Any]:
     """Nur Titel, Autor, Vorschaubild; Fehler sind kein Grund, den Link abzulehnen."""
     try:
@@ -74,6 +79,8 @@ async def _oembed(client: httpx.AsyncClient, endpoint: str, url: str) -> dict[st
         response = await client.get(
             endpoint, params={"url": url, "format": "json"}, follow_redirects=True
         )
+        if response.status_code in (401, 403, 404):
+            return {NOT_EMBEDDABLE: True}
         response.raise_for_status()
         data = response.json()
     except (httpx.HTTPError, ValueError, ratelimit.RateLimitedError):
@@ -130,7 +137,16 @@ async def resolve(url: str, client: httpx.AsyncClient) -> Resolved:
             embed_src=f"https://www.youtube-nocookie.com/embed/{vid}?autoplay=1&rel=0&playsinline=1",
             vertical="/shorts/" in url,
         )
-        return _meta(await _oembed(client, "https://www.youtube.com/oembed", r.url), r)
+        data = await _oembed(client, "https://www.youtube.com/oembed", r.url)
+        if data.get(NOT_EMBEDDABLE):
+            # Der Player bliebe am Fernseher schwarz: Karte mit Vorschaubild statt Einbettung
+            r.kind, r.embed_src = "link", None
+            r.image = f"https://i.ytimg.com/vi/{vid}/hqdefault.jpg"
+            r.extra["notice"] = (
+                "YouTube erlaubt für dieses Video kein Abspielen außerhalb von YouTube. "
+                "Der Fernseher zeigt Vorschaubild und Titel."
+            )
+        return _meta(data, r)
     if m := TIKTOK.match(url):
         vid = m.group(1)
         r = Resolved(

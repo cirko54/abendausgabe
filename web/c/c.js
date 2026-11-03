@@ -164,7 +164,7 @@
     if (!el) return;
     el.textContent = text;
     clearTimeout(toastTimer);
-    toastTimer = setTimeout(function () { el.textContent = ""; }, 2000);
+    toastTimer = setTimeout(function () { el.textContent = ""; }, Math.max(2000, text.length * 60));
   }
 
   // --------------------------------------------------------- Morgen danach
@@ -330,7 +330,7 @@
       share.items.push(data.item);
       share.busy = false;
       draw();
-      toast("Eingepackt.");
+      toast(data.notice ? "Eingepackt. " + data.notice : "Eingepackt.");
     } catch (e) {
       share.busy = false;
       share.error = e.message;
