@@ -297,3 +297,8 @@ Offen für Phase 1: TV-Ergebnis hier eintragen, Router-Typ (Präsenz), Kalenderq
 
 58. Nach dem Sendeschluss blieb der Fernseher bis zum nächsten Abend auf dem Sendeschluss-Screen stehen. Zurück ging es nur über den Admin-Knopf am Handy. Jetzt beginnt um 4 Uhr ein neuer Sendetag: Der Raum geht zurück in die Lobby, alle melden sich neu an. Das gilt auch für eine Sendung, die am Vorabend nicht zu Ende geführt wurde. Der Sendeschluss bleibt endgültig für den Abend: OK am Fernseher startet nichts neu (Invariante „kein mehr davon“).
     Verworfen: Lobby sofort nach dem Sendeschluss. Dann lädt OK direkt die nächste Sendung, und das Ende verliert seine Wirkung. Verworfen auch der Wechsel um Mitternacht, weil eine Sendung, die über Mitternacht läuft, zum Vorabend gehört.
+
+## 2026-11-03 – Sendung von vorn
+
+59. Rückmeldung des Haushalts: Es soll eine Möglichkeit geben, die Sendung neu zu starten. Admins haben am Handy jetzt den Knopf „Von vorn“, während die Sendung läuft und nach dem Sendeschluss. Die Sendung beginnt dann mit demselben Ablauf und denselben Anwesenden wieder beim ersten Beitrag; Punkte und Antworten beginnen neu, in der Datenbank zählt das als neue Sitzung. Mitbringsel bleiben im Ablauf, weil er nicht neu zusammengestellt wird.
+    Verworfen: neu starten über die Lobby. Dann würde der Ablauf neu gebaut, und die Mitbringsel fielen heraus, weil sie beim ersten Start schon als gezeigt gelten. „Von vorn“ ist eine bewusste Admin-Aktion; OK am Fernseher startet nach dem Sendeschluss weiterhin nichts.

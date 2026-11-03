@@ -106,6 +106,8 @@ async def ws_controller(ws: WebSocket) -> None:
                     await manager.handle(room.reset)
                 else:
                     await manager.advance()
+            elif kind == "restart" and is_admin:
+                await manager.handle(lambda: room.restart(time.monotonic()))
             elif kind == "end_now" and is_admin:
                 await manager.handle(lambda: room.end_now(time.monotonic()))
     except WebSocketDisconnect:

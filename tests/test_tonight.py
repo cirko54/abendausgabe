@@ -254,3 +254,27 @@ def test_unfinished_show_is_cleared_on_new_day() -> None:
     assert room.new_day() is True
     assert room.phase == "lobby" and room.block_index == -1
     assert room.new_day() is False
+
+
+def test_restart_replays_same_rundown() -> None:
+    rundown = [
+        {"id": "a", "type": "info", "title": "A"},
+        {"id": "b", "type": "info", "title": "B"},
+        {"id": "e", "type": "end", "title": "E"},
+    ]
+    room = Room(rundown)
+    assert room.restart(0.0) is False  # Lobby: nichts zu wiederholen
+    room.checkin("alex", "Alex", "#000", "admin")
+    room.checkin("sam", "Sam", "#111", "member")
+    room.leave("sam")
+    room.advance(0.0)
+    room.advance(0.0)
+    first = room.session_id
+    room.pop_events()
+    assert room.restart(1.0) is True
+    assert room.phase == "block" and room.block_index == 0 and room.rundown == rundown
+    assert room.present_ids == ["alex"] and room.session_id != first
+    assert [e.kind for e in room.pop_events()] == ["session_start"]
+    room.advance(2.0)
+    room.advance(2.0)
+    assert room.phase == "ended" and room.restart(3.0) is True

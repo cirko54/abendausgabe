@@ -404,7 +404,10 @@
         "<h1>Sendeschluss.</h1>" +
         '<p class="muted">Deine Punkte heute: ' + (you.total || 0) + "</p>" +
         shareButton() +
-        (isAdmin ? '<button class="big" data-act="advance">Zurück zur Startseite</button>' : "")
+        (isAdmin
+          ? '<button class="big" data-act="restart">Sendung von vorn</button>' +
+            '<button class="big" data-act="advance">Zurück zur Startseite</button>'
+          : "")
       );
     }
     if (state.block_phase === "ask" && (block.exempt || []).indexOf(me.person_id) >= 0) {
@@ -462,6 +465,7 @@
     if (isAdmin && inBlock) {
       html +=
         '<button class="small" data-act="advance">Weiter</button>' +
+        '<button class="small" data-act="restart">Von vorn</button>' +
         '<button class="small" data-act="end_now">Sendeschluss jetzt</button>';
     }
     if (me.role !== "guest") html += '<a href="/p/">Profil</a>';
@@ -553,6 +557,8 @@
           send({ type: "answer", value: roundSig(sliderValue(state.block, sliderPos)) });
         } else if (act === "share") {
           openShare();
+        } else if (act === "restart") {
+          if (confirm("Sendung von vorn beginnen? Die Punkte beginnen neu.")) send({ type: "restart" });
         } else if (act === "end_now") {
           if (confirm("Sendung jetzt beenden?")) send({ type: "end_now" });
         } else {

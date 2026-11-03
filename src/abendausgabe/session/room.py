@@ -125,12 +125,7 @@ class Room:
         if self.phase == "lobby":
             if not self.present_ids:
                 return False
-            self.session_id = uuid.uuid4().hex
-            self.scores = {}
-            self.events.append(
-                RoomEvent("session_start", None, None, {"members": self.present_ids})
-            )
-            self._enter_block(0, now)
+            self._start(now)
             return True
         if self.phase == "ended":
             return False
@@ -152,6 +147,26 @@ class Room:
         if self.phase != "ended":
             return False
         self._reset_flow()
+        return True
+
+    def _start(self, now: float) -> None:
+        self.session_id = uuid.uuid4().hex
+        self.scores = {}
+        self.events.append(RoomEvent("session_start", None, None, {"members": self.present_ids}))
+        self._enter_block(0, now)
+
+    def restart(self, now: float) -> bool:
+        """Dieselbe Sendung von vorn (nur Admins), etwa wenn ein Beitrag nicht lief.
+
+        Ablauf und Anwesende bleiben, Antworten und Punkte beginnen neu.
+        """
+        if self.phase == "lobby" or not self.present_ids:
+            return False
+        members = {pid: m.present for pid, m in self.members.items()}
+        self._reset_flow()
+        for pid, present in members.items():
+            self.members[pid].present = present
+        self._start(now)
         return True
 
     def new_day(self) -> bool:
