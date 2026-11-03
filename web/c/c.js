@@ -403,7 +403,7 @@
       return (
         "<h1>Sendeschluss.</h1>" +
         '<p class="muted">Deine Punkte heute: ' + (you.total || 0) + "</p>" +
-        (isAdmin ? '<button class="big" data-act="advance">Neue Testsendung</button>' : "")
+        (isAdmin ? '<button class="big" data-act="advance">Zurück zur Startseite</button>' : "")
       );
     }
     if (state.block_phase === "ask" && (block.exempt || []).indexOf(me.person_id) >= 0) {

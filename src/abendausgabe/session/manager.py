@@ -8,7 +8,7 @@ import json
 import logging
 import time
 from collections.abc import Awaitable, Callable
-from datetime import datetime
+from datetime import date, datetime, timedelta
 from typing import Any
 
 from fastapi import WebSocket
@@ -29,6 +29,12 @@ PrepareHook = Callable[[list[dict[str, Any]], list[tuple[str, str]]], list[dict[
 
 PROGRAM_MAX_AGE_S = 120.0
 PROGRAM_TIMEOUT_S = 12.0
+# Der Sendetag wechselt um 4 Uhr: Eine Sendung, die über Mitternacht läuft, gehört zum Vorabend.
+DAY_CHANGE = timedelta(hours=4)
+
+
+def show_day(moment: datetime) -> date:
+    return (moment.astimezone(BERLIN) - DAY_CHANGE).date()
 
 
 class RoomManager:
@@ -51,6 +57,8 @@ class RoomManager:
         self.controller_sockets: dict[WebSocket, str] = {}
         self._lock = asyncio.Lock()
         self._ticker: asyncio.Task[None] | None = None
+        self.clock: Callable[[], datetime] = lambda: datetime.now(BERLIN)
+        self.session_day: date | None = None
 
     async def start(self) -> None:
         if self._ticker is None or self._ticker.done():
@@ -67,6 +75,14 @@ class RoomManager:
         while True:
             await asyncio.sleep(0.5)
             await self.handle(lambda: self.room.tick(time.monotonic()))
+            await self.handle(self.roll_over)
+
+    def roll_over(self) -> bool:
+        """Am nächsten Sendetag steht wieder die Lobby da, nicht der Sendeschluss von gestern."""
+        if self.session_day is None or show_day(self.clock()) == self.session_day:
+            return False
+        self.session_day = None
+        return self.room.new_day()
 
     async def refresh_program(self, force: bool = False) -> None:
         """Tagesablauf neu zusammenstellen, solange die Sendung noch nicht läuft.
@@ -96,6 +112,10 @@ class RoomManager:
             await self.refresh_program()
             await self.handle(self._add_reviews)
             await self.handle(self._prepare)
+            started = await self.handle(lambda: self.room.advance(time.monotonic()))
+            if started:
+                self.session_day = show_day(self.clock())
+            return started
         return await self.handle(lambda: self.room.advance(time.monotonic()))
 
     def _prepare(self) -> bool:

@@ -154,6 +154,19 @@ class Room:
         self._reset_flow()
         return True
 
+    def new_day(self) -> bool:
+        """Neuer Sendetag: zurück in die Lobby, alle müssen sich neu anmelden.
+
+        Gilt auch für eine Sendung, die gestern nicht zu Ende geführt wurde.
+        """
+        present = bool(self.present_ids)
+        if self.phase == "lobby" and not present:
+            return False
+        self._reset_flow()
+        for member in self.members.values():
+            member.present = False
+        return True
+
     def end_now(self, now: float) -> bool:
         if self.phase != "block":
             return False

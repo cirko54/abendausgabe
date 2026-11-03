@@ -180,9 +180,7 @@ async def ensure_tagesschau_item(db: Database) -> None:
     except SOURCE_ERRORS as exc:
         log.warning("Aufmacher-Frage nicht nachgelegt: %s", exc)
         return
-    question = ts_block.aufmacher_question(
-        broadcasts, datetime.combine(day, time(21, 0), BERLIN)
-    )
+    question = ts_block.aufmacher_question(broadcasts, datetime.combine(day, time(21, 0), BERLIN))
     if question is None:
         return
     spec = question["quiz_item"]

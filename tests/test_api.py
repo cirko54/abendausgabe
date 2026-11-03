@@ -19,8 +19,7 @@ def test_pin_format_and_attempt_limit(client: TestClient) -> None:
     register(client, "kim", "2468")
     for _ in range(5):
         assert (
-            client.post("/api/devices", json={"person_id": "kim", "pin": "1111"}).status_code
-            == 403
+            client.post("/api/devices", json={"person_id": "kim", "pin": "1111"}).status_code == 403
         )
     blocked = client.post("/api/devices", json={"person_id": "kim", "pin": "2468"})
     assert blocked.status_code == 429

@@ -27,6 +27,8 @@ from abendausgabe.session.rundown import validate_rundown
 log = logging.getLogger(__name__)
 
 SOURCE_ERRORS = (httpx.HTTPError, ratelimit.RateLimitedError, ValueError, KeyError, TypeError)
+
+
 def _date_de(now: datetime) -> str:
     return date_de(now.astimezone(BERLIN).date())
 
@@ -68,8 +70,10 @@ async def build_program(
             parts.append("Weltblick")
 
     listed = ", ".join(parts[:-1]) + " und " + parts[-1] if len(parts) > 1 else "".join(parts)
-    intro = f"Heute: {listed}." if parts else (
-        "Heute sind keine Beiträge erreichbar. Prüft die Internetverbindung des Servers."
+    intro = (
+        f"Heute: {listed}."
+        if parts
+        else ("Heute sind keine Beiträge erreichbar. Prüft die Internetverbindung des Servers.")
     )
     greeting = {
         "id": "begruessung",

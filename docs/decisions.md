@@ -292,3 +292,8 @@ Offen für Phase 1: TV-Ergebnis hier eintragen, Router-Typ (Präsenz), Kalenderq
     Volltexte von Artikeln zeigt die Sendung nicht (Urheberrecht, CLAUDE.md); eine Zusammenfassung kommt mit der lokalen Redaktion (Nr. 54).
     Geprüft im Headless-Chrome: YouTube spielt eingebettet, mit deutschen Untertiteln. Guardian-Artikel kommt mit Bild und Titel. Foto, Gedanke und Raterunde „Wer hat das mitgebracht?“ mit drei Personen laufen. Ein Link ins Heimnetz (http://192.168.…) wird abgelehnt.
     TikTok: Das Beispielvideo aus der TikTok-Dokumentation zeigt „Player error“. Das Video ist vermutlich gelöscht, oEmbed liefert keinen Titel. Außerdem blendet TikTok ein Cookie-Banner ein, das sich mit der Fernbedienung nicht wegklicken lässt. Mit einem aktuellen Video am Fernseher prüfen.
+
+## 2026-11-03 – Sendetag wechselt um 4 Uhr
+
+58. Nach dem Sendeschluss blieb der Fernseher bis zum nächsten Abend auf dem Sendeschluss-Screen stehen. Zurück ging es nur über den Admin-Knopf am Handy. Jetzt beginnt um 4 Uhr ein neuer Sendetag: Der Raum geht zurück in die Lobby, alle melden sich neu an. Das gilt auch für eine Sendung, die am Vorabend nicht zu Ende geführt wurde. Der Sendeschluss bleibt endgültig für den Abend: OK am Fernseher startet nichts neu (Invariante „kein mehr davon“).
+    Verworfen: Lobby sofort nach dem Sendeschluss. Dann lädt OK direkt die nächste Sendung, und das Ende verliert seine Wirkung. Verworfen auch der Wechsel um Mitternacht, weil eine Sendung, die über Mitternacht läuft, zum Vorabend gehört.

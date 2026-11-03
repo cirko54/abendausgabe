@@ -218,3 +218,39 @@ def test_media_route(client: TestClient, monkeypatch: pytest.MonkeyPatch) -> Non
     body = response.json()
     assert set(body) == {"media", "error"}
     assert client.get("/api/media/unbekannt").status_code == 404
+
+
+@pytest.mark.anyio
+async def test_next_show_day_returns_to_lobby(tmp_path: Path) -> None:
+    rundown = [
+        {"id": "a", "type": "info", "title": "Heute"},
+        {"id": "e", "type": "end", "title": "Ende"},
+    ]
+    room = Room(rundown)
+    manager = RoomManager(room, Database(f"sqlite:///{tmp_path / 'db.sqlite3'}"))
+    clock = [at(2, 20, 30, month=11)]
+    manager.clock = lambda: clock[0]
+    room.checkin("alex", "Alex", "#000", "admin")
+    assert await manager.advance() is True
+    await manager.advance()
+    assert room.phase == "ended"
+    # Kurz nach Mitternacht gehört alles noch zum Vorabend
+    clock[0] = at(3, 1, 0, month=11)
+    assert manager.roll_over() is False and room.phase == "ended"
+    # Am nächsten Sendetag wartet die Lobby, alle melden sich neu an
+    clock[0] = at(3, 4, 30, month=11)
+    assert manager.roll_over() is True
+    assert room.phase == "lobby" and room.present_ids == []
+    assert manager.roll_over() is False
+
+
+def test_unfinished_show_is_cleared_on_new_day() -> None:
+    room = Room(
+        [{"id": "a", "type": "info", "title": "A"}, {"id": "e", "type": "end", "title": "E"}]
+    )
+    room.checkin("alex", "Alex", "#000", "admin")
+    room.advance(0.0)
+    assert room.phase == "block"
+    assert room.new_day() is True
+    assert room.phase == "lobby" and room.block_index == -1
+    assert room.new_day() is False

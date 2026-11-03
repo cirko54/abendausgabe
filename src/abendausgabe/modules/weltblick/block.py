@@ -132,9 +132,7 @@ def video_round(
     }
 
 
-def weltblick_blocks(
-    db: Database, sources: list[Source], now: datetime
-) -> list[dict[str, Any]]:
+def weltblick_blocks(db: Database, sources: list[Source], now: datetime) -> list[dict[str, Any]]:
     """Stabil für denselben Tag: Ein erneutes Zusammenstellen in der Lobby ändert nichts."""
     today = now.date()
     rng = random.Random(today.isoformat())
