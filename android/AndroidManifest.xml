@@ -2,8 +2,8 @@
 <!-- Abendausgabe für Android TV: dünne Hülle, die die Sendung vom Server im Vollbild zeigt. -->
 <manifest xmlns:android="http://schemas.android.com/apk/res/android"
     package="app.abendausgabe.tv"
-    android:versionCode="1"
-    android:versionName="0.1">
+    android:versionCode="2"
+    android:versionName="0.2">
 
     <uses-sdk android:minSdkVersion="21" android:targetSdkVersion="34" />
 

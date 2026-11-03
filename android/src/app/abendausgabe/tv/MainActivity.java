@@ -7,9 +7,13 @@ import android.content.SharedPreferences;
 import android.graphics.Color;
 import android.net.Uri;
 import android.os.Bundle;
+import android.os.SystemClock;
 import android.text.InputType;
+import android.view.InputDevice;
 import android.view.KeyEvent;
+import android.view.MotionEvent;
 import android.view.WindowManager;
+import android.webkit.JavascriptInterface;
 import android.webkit.WebChromeClient;
 import android.webkit.WebResourceError;
 import android.webkit.WebResourceRequest;
@@ -49,9 +53,19 @@ public class MainActivity extends Activity {
         settings.setMediaPlaybackRequiresUserGesture(false);
         settings.setUseWideViewPort(true);
         settings.setLoadWithOverviewMode(true);
-        settings.setUserAgentString(settings.getUserAgentString() + " AbendausgabeTV/0.1");
+        settings.setUserAgentString(settings.getUserAgentString() + " AbendausgabeTV/0.2");
         web.setWebChromeClient(new WebChromeClient());
+        web.addJavascriptInterface(new Bridge(), "AbendTV");
         web.setWebViewClient(new WebViewClient() {
+            /**
+             * Die App verlässt den eigenen Server nie: Ein Klick in einer Einbettung (Reddit,
+             * Instagram) würde sonst die ganze Seite auf die Plattform umleiten.
+             */
+            @Override
+            public boolean shouldOverrideUrlLoading(WebView view, WebResourceRequest request) {
+                return request.isForMainFrame() && !sameServer(request.getUrl());
+            }
+
             @Override
             public void onReceivedError(WebView view, WebResourceRequest request, WebResourceError error) {
                 if (request.isForMainFrame()) {
@@ -116,6 +130,50 @@ public class MainActivity extends Activity {
         return super.dispatchKeyEvent(event);
     }
 
+    // ------------------------------------------------------------------- Brücke
+
+    /**
+     * Ein echter Tipp für eingebettete Player, die erst nach einem Klick abspielen
+     * (Reddit, Instagram, TikTok; docs/decisions.md Nr. 61). Die Seite zeigt dafür einen
+     * Zeiger, den die Pfeiltasten bewegen; OK ruft {@code AbendTV.tap(x, y)} mit Anteilen
+     * der Fensterbreite und -höhe auf.
+     *
+     * <p>Die Schnittstelle sieht jeder Rahmen in der WebView, auch fremde. Sie kann deshalb
+     * nur tippen, nur innerhalb der eigenen WebView und höchstens zweimal pro Sekunde.
+     */
+    final class Bridge {
+        private long lastTap;
+
+        @JavascriptInterface
+        public void tap(final float x, final float y) {
+            if (!(x >= 0f && x <= 1f && y >= 0f && y <= 1f)) {
+                return;
+            }
+            long now = SystemClock.uptimeMillis();
+            if (now - lastTap < 500) {
+                return;
+            }
+            lastTap = now;
+            web.post(new Runnable() {
+                @Override
+                public void run() {
+                    float px = x * web.getWidth();
+                    float py = y * web.getHeight();
+                    long down = SystemClock.uptimeMillis();
+                    touch(down, down, MotionEvent.ACTION_DOWN, px, py);
+                    touch(down, down + 60, MotionEvent.ACTION_UP, px, py);
+                }
+            });
+        }
+    }
+
+    private void touch(long down, long at, int action, float x, float y) {
+        MotionEvent event = MotionEvent.obtain(down, at, action, x, y, 0);
+        event.setSource(InputDevice.SOURCE_TOUCHSCREEN);
+        web.dispatchTouchEvent(event);
+        event.recycle();
+    }
+
     // ------------------------------------------------------------------ Adresse
 
     private String savedUrl() {
@@ -144,6 +202,17 @@ public class MainActivity extends Activity {
         }
         saveAndLoad(url);
         return true;
+    }
+
+    private boolean sameServer(Uri target) {
+        String saved = savedUrl();
+        if (saved == null || target == null) {
+            return false;
+        }
+        Uri home = Uri.parse(saved);
+        return String.valueOf(home.getScheme()).equals(target.getScheme())
+                && String.valueOf(home.getHost()).equals(target.getHost())
+                && home.getPort() == target.getPort();
     }
 
     /** Ergänzt http:// und den Pfad /tv/, wenn nur Host und Port angegeben sind. */

@@ -110,6 +110,7 @@
       event.preventDefault();
       const el = document.getElementById("vid-screen");
       if (el) el.classList.add("chrome-on");
+      if (pointerKey(key)) return;
       if (key === "ok" || key === "down" || key === "right" || key === "next") send({ type: "ok" });
       return;
     }
@@ -206,13 +207,69 @@
       'referrerpolicy="strict-origin-when-cross-origin" title="' + esc(block.caption || block.title) + '"></iframe>' +
       '<div class="vid-top"><p class="kicker">' + esc(block.title) + " · " + esc(block.attribution || "") + "</p>" +
       (block.caption ? '<p class="vid-source">' + esc(block.caption) + "</p>" : "") + credit + "</div>" +
-      '<div class="vid-bottom"><span class="vid-hint">OK oder ▼: Weiter</span></div></div>'
+      '<div class="pointer" id="pointer" hidden></div>' +
+      '<div class="vid-bottom"><span class="vid-hint" id="embed-hint">' + embedHint(false) + "</span></div></div>"
     );
+  }
+
+  // ------------------------------------------------------------ Zeiger
+  // Fremde Player (Reddit, Instagram, TikTok) spielen erst nach einem Klick. In der TV-App
+  // bewegen die Pfeiltasten dann einen Zeiger, OK tippt dort echt (AbendTV.tap, decisions.md Nr. 61).
+  const POINTER_STEP = 0.04;
+  const POINTER_IDLE_MS = 8000;
+  const pointer = { on: false, x: 0.5, y: 0.5, timer: null };
+
+  function canTap() {
+    return !!(window.AbendTV && typeof window.AbendTV.tap === "function");
+  }
+
+  function embedHint(on) {
+    if (!canTap()) return "OK oder ▼: Weiter";
+    return on ? "Pfeile: Zeiger bewegen · OK: antippen" : "OK: Zeiger zum Antippen · ▼: Weiter";
+  }
+
+  function drawPointer() {
+    const el = document.getElementById("pointer");
+    const hint = document.getElementById("embed-hint");
+    if (hint) hint.textContent = embedHint(pointer.on);
+    if (!el) return;
+    el.hidden = !pointer.on;
+    el.style.transform = "translate(" + Math.round(pointer.x * window.innerWidth) + "px," +
+      Math.round(pointer.y * window.innerHeight) + "px)";
+  }
+
+  function pointerOff() {
+    pointer.on = false;
+    clearTimeout(pointer.timer);
+    drawPointer();
+  }
+
+  function pointerKey(key) {
+    if (!canTap()) return false;
+    if (!pointer.on) {
+      if (key !== "ok") return false;
+      pointer.on = true;
+    } else if (key === "ok") {
+      window.AbendTV.tap(pointer.x, pointer.y);
+      setTimeout(function () { window.focus(); }, 300);
+    } else {
+      const d = { left: [-1, 0], right: [1, 0], up: [0, -1], down: [0, 1] }[key];
+      if (!d) return false;
+      pointer.x = Math.min(0.98, Math.max(0.02, pointer.x + d[0] * POINTER_STEP));
+      pointer.y = Math.min(0.98, Math.max(0.02, pointer.y + d[1] * POINTER_STEP * 16 / 9));
+    }
+    clearTimeout(pointer.timer);
+    pointer.timer = setTimeout(pointerOff, POINTER_IDLE_MS);
+    drawPointer();
+    return true;
   }
 
   let embedTimer = null;
 
   function startEmbed() {
+    pointer.x = 0.5;
+    pointer.y = 0.5;
+    pointerOff();
     clearTimeout(embedTimer);
     embedTimer = setTimeout(function () {
       const el = document.getElementById("vid-screen");
