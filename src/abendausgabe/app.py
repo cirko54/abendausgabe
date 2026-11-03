@@ -7,7 +7,7 @@ import logging
 import time
 from collections.abc import AsyncIterator
 from contextlib import asynccontextmanager
-from datetime import datetime
+from datetime import UTC, datetime
 from typing import Any
 
 from fastapi import FastAPI
@@ -15,19 +15,20 @@ from fastapi.responses import RedirectResponse
 from fastapi.staticfiles import StaticFiles
 
 from abendausgabe import __version__
-from abendausgabe.api import devices, media, morning, profile, qr, tvcheck, ws
+from abendausgabe.api import devices, media, mitbringsel, morning, profile, qr, tvcheck, ws
 from abendausgabe.assembly.notausgabe import build_program
 from abendausgabe.core.config import Settings, get_people, get_settings
 from abendausgabe.core.dates import BERLIN
 from abendausgabe.core.db import Database
 from abendausgabe.core.security import AttemptLimiter
 from abendausgabe.learning.morning import morning_job
+from abendausgabe.modules.mitbringsel import store as mitbringsel_store
 from abendausgabe.modules.weltblick.block import mark_shown
 from abendausgabe.modules.weltblick.catalog import Source, selected_sources
 from abendausgabe.modules.weltblick.fetch import refresh_all
 from abendausgabe.session.manager import ProgramBuilder, RoomManager
 from abendausgabe.session.room import Room
-from abendausgabe.session.rundown import load_rundown
+from abendausgabe.session.rundown import load_rundown, validate_rundown
 
 FETCH_EVERY_S = 2 * 3600
 
@@ -74,6 +75,7 @@ async def _background_loop(db: Database, settings: Settings) -> None:
         if settings.program == "heute" and time.monotonic() - last_fetch >= FETCH_EVERY_S:
             last_fetch = time.monotonic()
             try:
+                mitbringsel_store.purge(db, settings.data_dir, datetime.now(UTC))
                 result = await refresh_all(db, _sources(settings))
                 new = sum(n for n in result.values() if n > 0)
                 failed = [k for k, n in result.items() if n < 0]
@@ -107,9 +109,18 @@ def create_app() -> FastAPI:
     room = Room(rundown, ask_timeout_s=settings.ask_timeout_s)
 
     def on_start(started: list[dict[str, Any]]) -> None:
-        mark_shown(db, started, datetime.now(BERLIN).date())
+        today = datetime.now(BERLIN).date()
+        mark_shown(db, started, today)
+        mitbringsel_store.mark_shown(db, started, today)
 
-    manager = RoomManager(room, db, program=program, on_start=on_start)
+    def prepare(
+        rundown: list[dict[str, Any]], present: list[tuple[str, str]]
+    ) -> list[dict[str, Any]]:
+        people = [mitbringsel_store.Person(pid, name) for pid, name in present]
+        blocks = mitbringsel_store.show_blocks(db, people, datetime.now(UTC))
+        return validate_rundown(mitbringsel_store.with_mitbringsel(rundown, blocks))
+
+    manager = RoomManager(room, db, program=program, on_start=on_start, prepare=prepare)
 
     @asynccontextmanager
     async def lifespan(_app: FastAPI) -> AsyncIterator[None]:
@@ -135,6 +146,7 @@ def create_app() -> FastAPI:
         qr.router,
         media.router,
         morning.router,
+        mitbringsel.router,
         ws.router,
     )
     for router in routers:

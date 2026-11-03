@@ -24,6 +24,8 @@ log = logging.getLogger(__name__)
 
 ProgramBuilder = Callable[[], Awaitable[list[dict[str, Any]]]]
 StartHook = Callable[[list[dict[str, Any]]], None]
+# Vor dem Start: Ablauf für die Anwesenden ergänzen (Mitbringsel), Liste aus (id, Name)
+PrepareHook = Callable[[list[dict[str, Any]], list[tuple[str, str]]], list[dict[str, Any]]]
 
 PROGRAM_MAX_AGE_S = 120.0
 PROGRAM_TIMEOUT_S = 12.0
@@ -36,11 +38,13 @@ class RoomManager:
         db: Database,
         program: ProgramBuilder | None = None,
         on_start: StartHook | None = None,
+        prepare: PrepareHook | None = None,
     ) -> None:
         self.room = room
         self.db = db
         self.program = program
         self.on_start = on_start
+        self.prepare = prepare
         self._program_built_at: float | None = None
         self._program_lock = asyncio.Lock()
         self.tv_sockets: set[WebSocket] = set()
@@ -91,7 +95,19 @@ class RoomManager:
         if self.room.phase == "lobby":
             await self.refresh_program()
             await self.handle(self._add_reviews)
+            await self.handle(self._prepare)
         return await self.handle(lambda: self.room.advance(time.monotonic()))
+
+    def _prepare(self) -> bool:
+        if self.prepare is None or self.room.phase != "lobby":
+            return False
+        present = [(pid, self.room.members[pid].name) for pid in self.room.present_ids]
+        try:
+            rundown = self.prepare(self.room.rundown, present)
+        except Exception:  # Zugabe; die Sendung startet trotzdem
+            log.exception("Ablauf konnte nicht ergänzt werden.")
+            return False
+        return self.room.set_rundown(rundown)
 
     def _add_reviews(self) -> bool:
         """Fällige Wiederholungen für die Anwesenden vor den Sendeschluss (decisions.md Nr. 44)."""

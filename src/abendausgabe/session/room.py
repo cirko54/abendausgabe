@@ -193,7 +193,7 @@ class Room:
         block = self.current_block
         if self.phase != "block" or self.block_phase != "ask" or block is None:
             return False
-        if person_id not in self.present_ids:
+        if person_id not in self.present_ids or person_id in block.get("exempt", []):
             return False
         validated = self._validate(block, value)
         if validated is None:
@@ -240,7 +240,8 @@ class Room:
     def _maybe_reveal(self) -> None:
         if self.block_phase != "ask":
             return
-        present = set(self.present_ids)
+        block = self.current_block or {}
+        present = set(self.present_ids) - set(block.get("exempt", []))
         if present and present.issubset(self.answers):
             self._reveal()
 

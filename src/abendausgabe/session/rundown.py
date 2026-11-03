@@ -11,9 +11,18 @@ REQUIRED = {
     "estimate": {"id", "title", "question", "unit", "min", "max", "truth"},
     "choice": {"id", "title", "question", "options", "correct"},
     "video": {"id", "title"},
+    "embed": {"id", "title", "src"},
     "end": {"id", "title"},
 }
 VIDEO_FORMATS = {"mp4", "hls"}
+# Einbettungen nur von offiziellen Playern (decisions.md Nr. 56)
+EMBED_HOSTS = (
+    "https://www.youtube-nocookie.com/embed/",
+    "https://www.tiktok.com/player/v1/",
+    "https://www.instagram.com/",
+    "https://embed.reddit.com/",
+    "https://player.vimeo.com/video/",
+)
 
 
 def validate_rundown(blocks: list[dict[str, Any]]) -> list[dict[str, Any]]:
@@ -36,6 +45,8 @@ def validate_rundown(blocks: list[dict[str, Any]]) -> list[dict[str, Any]]:
             raise ValueError(f"Block {block['id']!r}: correct verweist auf keine Option.")
         if kind == "video":
             _validate_video(block)
+        if kind == "embed" and not str(block["src"]).startswith(EMBED_HOSTS):
+            raise ValueError(f"Block {block['id']!r}: Einbettung nur von offiziellen Playern.")
     if not blocks or blocks[-1]["type"] != "end":
         raise ValueError("Der Ablauf muss mit einem end-Block enden (Sendeschluss).")
     return blocks

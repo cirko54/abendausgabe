@@ -39,6 +39,8 @@ _BUCKETS: dict[str, TokenBucket] = {
     # Weltblick (decisions.md Nr. 51): Abruf alle 2 Stunden, je Quelle ein Aufruf
     "rss": TokenBucket(capacity=120, per_seconds=3600),
     "bluesky": TokenBucket(capacity=60, per_seconds=3600),
+    # Mitbringsel: Metadaten zu geteilten Links (oEmbed, Seitenkopf)
+    "mitbringsel": TokenBucket(capacity=60, per_seconds=3600),
 }
 
 

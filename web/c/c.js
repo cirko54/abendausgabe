@@ -16,6 +16,8 @@
   let toastTimer = null;
   // Morgen danach (decisions.md Nr. 45): { card, rating, answer, result } oder null
   let morning = null;
+  // Mitbringsel teilen (decisions.md Nr. 56): null oder { items, error, busy }
+  let share = null;
 
   function esc(value) {
     return String(value == null ? "" : value)
@@ -258,6 +260,113 @@
     });
   }
 
+  // ----------------------------------------------------------- Mitbringsel
+
+  async function openShare() {
+    share = { items: [], error: "", busy: false };
+    draw();
+    try {
+      share.items = (await api("GET", "/api/mitbringsel")).items;
+    } catch (e) {
+      share.error = e.message;
+    }
+    if (share) draw();
+  }
+
+  function shareHtml() {
+    const list = share.items.length
+      ? '<h2 class="recall">Schon eingepackt</h2><ul class="mine">' +
+        share.items.map(function (it) {
+          return "<li><span><strong>" + esc(it.provider) + "</strong> · " + esc(it.title || it.url) +
+            (it.note ? '<br><span class="muted">„' + esc(it.note) + "“</span>" : "") + "</span>" +
+            '<button class="small" data-unshare="' + it.id + '">Zurücknehmen</button></li>';
+        }).join("") + "</ul>"
+      : "";
+    return (
+      "<h1>Etwas mitbringen</h1>" +
+      '<p class="muted">Für die nächste Sendung, bei der du dabei bist. Erst raten die anderen, ' +
+      "wer es mitgebracht hat.</p>" +
+      '<input id="share-url" type="url" inputmode="url" placeholder="Link: Video, Artikel, Bild, Beitrag" autocomplete="off">' +
+      '<label class="photo-pick">Oder ein Foto / Screenshot <input id="share-photo" type="file" accept="image/*"></label>' +
+      '<input id="share-note" type="text" maxlength="280" placeholder="Warum? Oder ein Gedanke für alle">' +
+      '<p id="err" class="error">' + esc(share.error) + "</p>" +
+      '<button class="big primary" data-share="send"' + (share.busy ? " disabled" : "") + ">" +
+      (share.busy ? "Wird geprüft …" : "Einpacken") + "</button>" +
+      list + '<button class="big" data-share="close">Fertig</button>'
+    );
+  }
+
+  // Fotos verkleinert das Handy selbst (lange Seite höchstens 1600 px, JPEG): schneller und
+  // ohne Ortsdaten aus dem Original (EXIF fällt beim Neuzeichnen weg).
+  function shrink(file) {
+    return new Promise(function (resolve, reject) {
+      const img = new Image();
+      const url = URL.createObjectURL(file);
+      img.onload = function () {
+        const scale = Math.min(1, 1600 / Math.max(img.width, img.height));
+        const canvas = document.createElement("canvas");
+        canvas.width = Math.round(img.width * scale);
+        canvas.height = Math.round(img.height * scale);
+        canvas.getContext("2d").drawImage(img, 0, 0, canvas.width, canvas.height);
+        URL.revokeObjectURL(url);
+        resolve(canvas.toDataURL("image/jpeg", 0.85));
+      };
+      img.onerror = function () { reject(new Error("Das Bild lässt sich nicht lesen.")); };
+      img.src = url;
+    });
+  }
+
+  async function sendShare() {
+    const url = document.getElementById("share-url").value.trim();
+    const note = document.getElementById("share-note").value.trim();
+    const file = document.getElementById("share-photo").files[0];
+    if (!url && !note && !file) return;
+    share.busy = true;
+    share.error = "";
+    draw();
+    try {
+      const photo = file ? await shrink(file) : "";
+      const data = await api("POST", "/api/mitbringsel", { url: file ? "" : url, note: note, photo: photo });
+      share.items.push(data.item);
+      share.busy = false;
+      draw();
+      toast("Eingepackt.");
+    } catch (e) {
+      share.busy = false;
+      share.error = e.message;
+      draw();
+      const input = document.getElementById("share-url");
+      if (input) input.value = url;
+      const n = document.getElementById("share-note");
+      if (n) n.value = note;
+    }
+  }
+
+  function bindShare() {
+    app.querySelectorAll("[data-share]").forEach(function (el) {
+      el.addEventListener("click", function () {
+        if (el.getAttribute("data-share") === "send") sendShare();
+        else {
+          share = null;
+          renderKey = "";
+          render();
+        }
+      });
+    });
+    app.querySelectorAll("[data-unshare]").forEach(function (el) {
+      el.addEventListener("click", async function () {
+        const id = Number(el.getAttribute("data-unshare"));
+        try {
+          await api("DELETE", "/api/mitbringsel/" + id);
+          share.items = share.items.filter(function (it) { return it.id !== id; });
+        } catch (e) {
+          share.error = e.message;
+        }
+        draw();
+      });
+    });
+  }
+
   // ------------------------------------------------------------ Darstellung
 
   function sliderValue(block, pos) {
@@ -279,14 +388,15 @@
     if (!you.present) {
       return (
         '<h1>Guten Abend, ' + esc(me.name) + "</h1>" +
-        '<button class="big primary" data-act="checkin">Ich bin dabei</button>'
+        '<button class="big primary" data-act="checkin">Ich bin dabei</button>' + shareButton()
       );
     }
     if (state.phase === "lobby") {
       return (
         "<h1>Du bist eingecheckt.</h1>" +
         '<p class="muted">Die Sendung startet mit OK auf der Fernbedienung.</p>' +
-        (isAdmin ? '<button class="big primary" data-act="advance">Sendung starten</button>' : "")
+        (isAdmin ? '<button class="big primary" data-act="advance">Sendung starten</button>' : "") +
+        shareButton()
       );
     }
     if (state.phase === "ended") {
@@ -295,6 +405,10 @@
         '<p class="muted">Deine Punkte heute: ' + (you.total || 0) + "</p>" +
         (isAdmin ? '<button class="big" data-act="advance">Neue Testsendung</button>' : "")
       );
+    }
+    if (state.block_phase === "ask" && (block.exempt || []).indexOf(me.person_id) >= 0) {
+      return "<h1>Dein Mitbringsel.</h1><p class=\"muted\">Die anderen raten, wer es mitgebracht hat. " +
+        "Gleich darfst du erzählen, warum.</p>";
     }
     if (state.block_phase === "ask" && !you.answered) {
       if (block.type === "choice") {
@@ -329,6 +443,10 @@
     return '<h1>Schau auf den Fernseher.</h1><p class="muted">Handy kann weg.</p>';
   }
 
+  function shareButton() {
+    return '<button class="big" data-act="share">Etwas mitbringen</button>';
+  }
+
   function footHtml() {
     const isAdmin = me.role === "admin";
     const inBlock = state.phase === "block";
@@ -358,6 +476,7 @@
 
   function render() {
     if (!me) return;
+    if (share) return; // Formular nicht durch Zustandsmeldungen zerstören
     if (!state) {
       if (morningVisible()) draw();
       return;
@@ -392,6 +511,11 @@
     const top =
       '<div class="top"><span class="dot" style="background:' + esc(me.color) + '"></span>' +
       esc(me.name) + "</div>";
+    if (share) {
+      app.innerHTML = top + '<div class="body">' + shareHtml() + '<p id="toast" class="toast"></p></div>';
+      bindShare();
+      return;
+    }
     if (morningVisible()) {
       app.innerHTML = top + '<div class="body">' + morningHtml() + "</div>";
       bindMorning();
@@ -426,6 +550,8 @@
         const act = el.getAttribute("data-act");
         if (act === "answer") {
           send({ type: "answer", value: roundSig(sliderValue(state.block, sliderPos)) });
+        } else if (act === "share") {
+          openShare();
         } else if (act === "end_now") {
           if (confirm("Sendung jetzt beenden?")) send({ type: "end_now" });
         } else {

@@ -106,6 +106,13 @@
       }
       return;
     }
+    if (document.getElementById("embed") && key) {
+      event.preventDefault();
+      const el = document.getElementById("vid-screen");
+      if (el) el.classList.add("chrome-on");
+      if (key === "ok" || key === "down" || key === "right" || key === "next") send({ type: "ok" });
+      return;
+    }
     if (key === "ok") {
       event.preventDefault();
       send({ type: "ok" });
@@ -174,11 +181,53 @@
   }
 
   function renderInfo(block) {
+    const credit = block.credit ? '<p class="credit">' + esc(block.credit) + "</p>" : "";
+    if (block.media) {
+      return (
+        '<div class="screen"><p class="kicker">' + esc(block.title) + "</p>" +
+        withMedia(block, '<p class="lead">' + esc(block.body || "") + "</p>" + credit) + "</div>"
+      );
+    }
     return (
       '<div class="screen"><h1>' + esc(block.title) + "</h1>" +
-      '<p class="lead">' + esc(block.body || "") + "</p>" +
+      '<p class="lead">' + esc(block.body || "") + "</p>" + credit +
       "</div>"
     );
+  }
+
+  // Mitbringsel aus offiziellen Playern (decisions.md Nr. 56). Der fremde Player bekommt
+  // keinen Fokus, damit die Fernbedienung bei der Seite bleibt.
+  function renderEmbed(block) {
+    const credit = block.credit ? '<p class="vid-source">' + esc(block.credit) + "</p>" : "";
+    return (
+      '<div class="video-screen chrome-on embed-screen' + (block.vertical ? " vertical" : "") +
+      '" id="vid-screen"><iframe id="embed" src="' + esc(block.src) + '" tabindex="-1" ' +
+      'allow="autoplay; encrypted-media; picture-in-picture; fullscreen" ' +
+      'referrerpolicy="strict-origin-when-cross-origin" title="' + esc(block.caption || block.title) + '"></iframe>' +
+      '<div class="vid-top"><p class="kicker">' + esc(block.title) + " · " + esc(block.attribution || "") + "</p>" +
+      (block.caption ? '<p class="vid-source">' + esc(block.caption) + "</p>" : "") + credit + "</div>" +
+      '<div class="vid-bottom"><span class="vid-hint">OK oder ▼: Weiter</span></div></div>'
+    );
+  }
+
+  let embedTimer = null;
+
+  function startEmbed() {
+    clearTimeout(embedTimer);
+    embedTimer = setTimeout(function () {
+      const el = document.getElementById("vid-screen");
+      if (el) el.classList.remove("chrome-on");
+    }, 6000);
+    // Fokus bei der Seite halten, auch wenn der Player ihn an sich zieht
+    window.addEventListener("blur", refocus);
+  }
+
+  function refocus() {
+    if (!document.getElementById("embed")) {
+      window.removeEventListener("blur", refocus);
+      return;
+    }
+    setTimeout(function () { window.focus(); }, 50);
   }
 
   function optionList(block) {
@@ -197,6 +246,9 @@
   // Bild und Originalschlagzeile (Weltblick): links das Bild, rechts Text und Antworten.
   function withMedia(block, inner) {
     if (!block.media || block.media.kind !== "image") return inner;
+    if (block.media.large) {
+      return '<div class="media-big"><img src="' + esc(block.media.src) + '" alt=""></div>' + inner;
+    }
     const lang = block.caption_lang ? ' lang="' + esc(block.caption_lang) + '"' : "";
     return (
       '<div class="media-split"><div class="media-pic"><img src="' + esc(block.media.src) +
@@ -311,7 +363,8 @@
           .join("") +
         "</ul>";
     }
-    const source = block.source ? '<p class="source">Quelle: ' + esc(block.source) + "</p>" : "";
+    const label = block.source_label != null ? block.source_label : "Quelle: ";
+    const source = block.source ? '<p class="source">' + esc(label + block.source) + "</p>" : "";
     return (
       '<div class="screen" id="reveal"><p class="kicker">Auflösung</p>' +
       withMedia(block, '<h1 class="' + (block.media ? "q-small" : "") + '">' + esc(block.question) + "</h1>" + body + source) +
@@ -361,7 +414,8 @@
       '<div class="video-screen chrome-on" id="vid-screen">' +
       '<video id="vid" playsinline preload="auto"></video>' +
       '<div class="vid-top"><p class="kicker" id="vid-title">' + esc(block.title) + "</p>" +
-      '<p id="vid-source" class="vid-source">' + source + "</p></div>" +
+      '<p id="vid-source" class="vid-source">' + source + "</p>" +
+      (block.credit ? '<p class="vid-source">' + esc(block.credit) + "</p>" : "") + "</div>" +
       '<p id="vid-msg" class="vid-msg">Lädt …</p>' +
       '<p id="vid-flash" class="vid-flash"></p>' +
       '<div class="vid-progress"><span id="vid-time" class="vid-time"></span>' +
@@ -690,15 +744,18 @@
     let html = "";
     let key = state.phase + ":" + state.block_index + ":" + state.block_phase;
     const isVideo = state.block_phase === "show" && block && block.type === "video";
+    const isEmbed = state.block_phase === "show" && block && block.type === "embed";
+    if (isEmbed && key === screenKey && document.getElementById("embed")) return;
     if (isVideo && key === screenKey && player) {
       // Laufendes Video nicht neu aufbauen, nur die Seitenleiste aktualisieren.
       return;
     }
     stopPlayer();
-    document.body.classList.toggle("video-mode", !!isVideo);
+    document.body.classList.toggle("video-mode", !!(isVideo || isEmbed));
     if (state.phase === "lobby") html = renderLobby();
     else if (state.phase === "ended") html = renderEnded();
     else if (isVideo) html = renderVideo(block);
+    else if (isEmbed) html = renderEmbed(block);
     else if (state.block_phase === "show") html = renderInfo(block);
     else if (state.block_phase === "ask") html = renderAsk(block);
     else if (state.block_phase === "reveal") html = renderReveal(block, state.reveal);
@@ -715,6 +772,7 @@
       startVideo(block);
       showChrome();
     }
+    if (isEmbed) startEmbed();
 
     const reveal = document.getElementById("reveal");
     if (reveal) {

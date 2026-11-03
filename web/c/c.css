@@ -61,3 +61,15 @@ h2.recall { font-size: 21px; line-height: 1.25; margin: 26px 0 4px; }
 .big.picked { border-color: var(--text); }
 .small-value { font-size: 24px; }
 a.big { box-sizing: border-box; text-align: center; text-decoration: none; color: var(--text); }
+
+/* Mitbringsel */
+input[type="url"], input#share-note {
+  width: 100%; box-sizing: border-box; font: inherit; font-size: 18px;
+  padding: 14px; margin: 6px 0; border-radius: 12px; border: 2px solid var(--line);
+  background: var(--night); color: var(--text);
+}
+ul.mine { list-style: none; padding: 0; margin: 0; }
+ul.mine li { display: flex; gap: 10px; align-items: center; justify-content: space-between; padding: 10px 0; border-bottom: 1px solid var(--line); font-size: 16px; }
+ul.mine li .small { flex: 0 0 auto; }
+.photo-pick { display: block; margin: 8px 0; color: var(--muted); font-size: 16px; }
+.photo-pick input { display: block; margin-top: 6px; color: var(--text); }

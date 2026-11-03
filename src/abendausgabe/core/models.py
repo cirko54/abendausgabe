@@ -153,3 +153,26 @@ class RawItem(Base):
     fetched_at: Mapped[datetime] = mapped_column(DateTime(timezone=True), default=utcnow)
     expires_at: Mapped[datetime] = mapped_column(DateTime(timezone=True), index=True)
     shown_on: Mapped[date | None] = mapped_column(Date, nullable=True)
+
+
+class Mitbringsel(Base):
+    """Link, den eine Person für die nächste Sendung teilt (decisions.md Nr. 56)."""
+
+    __tablename__ = "mitbringsel"
+    id: Mapped[int] = mapped_column(Integer, primary_key=True, autoincrement=True)
+    person_id: Mapped[str] = mapped_column(String(64), index=True)
+    url: Mapped[str] = mapped_column(String(600))
+    note: Mapped[str] = mapped_column(String(200), default="")
+    kind: Mapped[str] = mapped_column(String(16))  # embed | video | image | link
+    provider: Mapped[str] = mapped_column(String(32))
+    title: Mapped[str] = mapped_column(String(300), default="")
+    author: Mapped[str] = mapped_column(String(120), default="")
+    image: Mapped[str | None] = mapped_column(String(600), nullable=True)
+    embed_src: Mapped[str | None] = mapped_column(String(600), nullable=True)
+    video_json: Mapped[str | None] = mapped_column(Text, nullable=True)
+    vertical: Mapped[int] = mapped_column(Integer, default=0)
+    created_at: Mapped[datetime] = mapped_column(
+        DateTime(timezone=True), default=utcnow, index=True
+    )
+    expires_at: Mapped[datetime] = mapped_column(DateTime(timezone=True))
+    shown_on: Mapped[date | None] = mapped_column(Date, nullable=True)

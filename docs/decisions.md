@@ -273,3 +273,22 @@ Offen für Phase 1: TV-Ergebnis hier eintragen, Router-Typ (Präsenz), Kalenderq
     Zeitversetzt spult man nicht vor den Sendebeginn zurück und vorwärts nicht ganz an die Live-Kante. Wer nach dem Sendeende zurückspult, kann weiterschauen.
     Zeitanzeige und Fortschrittsbalken erscheinen mit der Leiste. Nr. 37 („Weiter mit Pfeil rechts“) ist damit für Videos überholt; das Handy behält „Weiter“ für Admins.
     Im Headless-Chrome geprüft mit der MP4-Aufzeichnung: +30 s, −15 s, Anzeige „0:18 / 15:37“, ▼ wechselt zum Weltblick. Zeitversetzt (hls.js) noch ungetestet.
+
+## 2026-11-03 – Mitbringsel
+
+56. Mitbringsel (Nr. 47, 50): Jede Person teilt tagsüber am Handy unter /c/ einen Link, dazu optional eine Zeile, warum. In der nächsten Sendung, bei der sie dabei ist, läuft er gleich nach der Begrüßung. „Der Tisch als Hebel“ (SPEC §2.1): Das Fremde bringt jemand vom Sofa mit, nicht der Algorithmus.
+    - Ablauf: Erst kommt der Beitrag selbst, ohne Namen. Sind mindestens drei da, raten die anderen „Wer hat das mitgebracht?“; die Person selbst rät nicht mit. Danach zeigt die Auflösung ihre Zeile. Bei weniger Personen steht der Name gleich dabei.
+    - Höchstens ein Mitbringsel pro Person und Abend, höchstens drei insgesamt, die ältesten zuerst. Es wird nur gezeigt, wenn die Person anwesend ist. Nach 7 Tagen verfällt es.
+    - Einbettung nur über offizielle Player, deren Adresse der Server selbst aus der ID baut: YouTube (youtube-nocookie), TikTok (player/v1), Instagram (/embed), Reddit (embed.reddit.com), Vimeo. HTML aus oEmbed-Antworten wird nie übernommen; oEmbed liefert nur Titel, Autor und Vorschaubild. Bluesky-Beiträge kommen über die offene API mit Bild oder Video wie im Weltblick. Andere Seiten erscheinen als Karte mit og:title und og:image.
+    - Sicherheit: Der Server ruft vom Nutzer genannte Adressen nur über https und nur bei öffentlichen IP-Adressen ab (Schutz vor Zugriffen ins Heimnetz, SSRF). Jede Weiterleitung wird neu geprüft, höchstens 3, Antwort höchstens 512 kB. Pro Person höchstens 10 offene Mitbringsel und 20 Einreichungen pro Tag.
+    - Restrisiko, bewusst in Kauf genommen: DNS-Rebinding zwischen Prüfung und Abruf. Der Abruf liest nur Metadaten und läuft nur aus dem Heimnetz heraus, angestoßen von angemeldeten Personen.
+    - Am Fernseher läuft die Einbettung im Vollbild; Pausieren übernimmt der fremde Player nicht. OK, ▶ und ▼ gehen weiter. Ob TikTok, Instagram und Reddit in der WebView der TV-App laufen, muss ein Test am Gerät zeigen.
+    - Neue Tabelle `mitbringsel`. Neuer Blocktyp `embed`.
+    Verworfen: Teilen direkt aus anderen Apps (Web Share Target). Es braucht eine installierte PWA über HTTPS, im LAN über http nicht möglich; kommt mit der internetfähigen Instanz.
+57. Mitbringsel erweitert, auf Nachfrage des Projektinhabers („nur YouTube und TikTok?“). Was man mitbringen kann:
+    - Links: YouTube, TikTok, Instagram, Reddit, Vimeo (eingebettet), Bluesky (Bild oder Video), jede Nachrichten- oder Webseite (Titel und Vorschaubild aus og:title/og:image), direkte Bildlinks (JPEG, PNG, WebP, GIF).
+    - Eigene Fotos und Screenshots, etwa aus Instagram-Storys, WhatsApp oder vom Ausflug. Das Handy verkleinert sie vor dem Hochladen auf höchstens 1600 px als JPEG. Dabei fallen die Ortsdaten (EXIF) weg. Der Server speichert nur echte Bilder (Dateikopf geprüft, höchstens 3 MB) im Datenordner; nach 7 Tagen werden sie gelöscht. Der Fernseher lädt sie ohne Anmeldung unter einem zufälligen Namen (128 Bit), nur im LAN. Eigene Fotos erscheinen groß.
+    - Ein Gedanke oder eine Frage an die Runde, ganz ohne Link (bis 280 Zeichen).
+    Volltexte von Artikeln zeigt die Sendung nicht (Urheberrecht, CLAUDE.md); eine Zusammenfassung kommt mit der lokalen Redaktion (Nr. 54).
+    Geprüft im Headless-Chrome: YouTube spielt eingebettet, mit deutschen Untertiteln. Guardian-Artikel kommt mit Bild und Titel. Foto, Gedanke und Raterunde „Wer hat das mitgebracht?“ mit drei Personen laufen. Ein Link ins Heimnetz (http://192.168.…) wird abgelehnt.
+    TikTok: Das Beispielvideo aus der TikTok-Dokumentation zeigt „Player error“. Das Video ist vermutlich gelöscht, oEmbed liefert keinen Titel. Außerdem blendet TikTok ein Cookie-Banner ein, das sich mit der Fernbedienung nicht wegklicken lässt. Mit einem aktuellen Video am Fernseher prüfen.
