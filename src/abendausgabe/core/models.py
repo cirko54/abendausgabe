@@ -176,3 +176,15 @@ class Mitbringsel(Base):
     )
     expires_at: Mapped[datetime] = mapped_column(DateTime(timezone=True))
     shown_on: Mapped[date | None] = mapped_column(Date, nullable=True)
+
+
+class Translation(Base):
+    """Übersetzte Schlagzeile aus der Redaktion (decisions.md Nr. 63), lebt wie raw_item."""
+
+    __tablename__ = "translation"
+    raw_item_id: Mapped[str] = mapped_column(String(40), primary_key=True)
+    language: Mapped[str] = mapped_column(String(16), primary_key=True)  # Zielsprache, heute „de“
+    text: Mapped[str] = mapped_column(Text)
+    model: Mapped[str] = mapped_column(String(80))
+    prompt_version: Mapped[str] = mapped_column(String(16))
+    created_at: Mapped[datetime] = mapped_column(DateTime(timezone=True), default=utcnow)

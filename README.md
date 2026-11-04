@@ -105,6 +105,18 @@ Danach bei jeder Änderung `make deploy-nas`, Log mit `make logs-nas`. Wer von e
 
 Der Weltblick zeigt jeden Abend Bilder und Kurzvideos aus Quellen weltweit, zum Beispiel aus Indien, Pakistan, Serbien, der Ukraine, Afrika oder Australien, dazu Agenturvideos von Bluesky. Bei zwei Beiträgen raten alle, aus welchem Land die Meldung kommt. Die Quellen stehen im Katalog unter [catalog/](catalog/README.md); welche ein Haushalt nutzt, legt `config/feeds.yaml` fest. Es gibt nur offene Zugänge (RSS, offizielle APIs). Gespeichert werden nur Titel und Links, und das höchstens drei Tage. Neue Quellen für den Katalog gerne per Pull Request.
 
+## Redaktion: Übersetzung
+
+Die Schlagzeilen im Weltblick kommen im Original. Mit einer Redaktion auf einem zweiten Rechner (zum Beispiel einem Mac mit Apple-Chip und 16 GB RAM oder mehr) erscheinen sie auf Deutsch, das Original klein darunter. Das Modell läuft lokal über [Ollama](https://ollama.com); es verlassen keine Daten das Haus, und es kostet nichts außer Strom.
+
+```sh
+brew install ollama && brew services start ollama
+ollama pull translategemma:12b
+openssl rand -hex 32          # Token, in .env auf Server und Mac als ABEND_REDAKTION_TOKEN
+```
+
+Auf dem Mac in `.env` zusätzlich `ABEND_SERVER_URL=http://<Server-IP>:8470`. Dann den Server neu starten und auf dem Mac `uv run abend redaktion` einmal von Hand ausprobieren. `make install-redaktion` richtet den Lauf um 16:30, 18:30 und 19:40 ein (launchd, Log in `data/redaktion.log`). Jede Übersetzung wird geprüft: Steht darin eine Zahl, die das Original nicht hat, bleibt die Schlagzeile im Original.
+
 ## Mitbringsel
 
 Am Handy unter „Etwas mitbringen“ teilt jede Person, was sie den anderen zeigen will: einen Link (YouTube, TikTok, Instagram, Reddit, Vimeo, Bluesky, jede Nachrichtenseite, ein Bild), ein eigenes Foto oder einen Screenshot, oder einfach einen Gedanken für die Runde. In der nächsten Sendung, bei der die Person dabei ist, läuft es gleich nach der Begrüßung; ab drei Personen raten die anderen erst, wer es mitgebracht hat. Eingebettet wird nur über die offiziellen Player der Plattformen. Der Server ruft nur öffentliche Adressen ab, nie etwas im Heimnetz.

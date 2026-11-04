@@ -318,3 +318,24 @@ Offen für Phase 1: TV-Ergebnis hier eintragen, Router-Typ (Präsenz), Kalenderq
     Verworfen: von selbst in die Bildmitte tippen. Bei Reddit liegt das Video nicht in der Mitte, und ein Tipp auf einen Link öffnet die fremde Seite im Rahmen.
     Am Fernseher geprüft (App 0.2): Zeiger erscheint, ein Tipp auf „Weiterlesen“ klappt den Reddit-Beitrag in der Einbettung auf, die Pfeiltasten bewegen den Zeiger danach weiter. Dabei aufgefallen: Ein Tipp auf einen Link in der Einbettung hat die ganze App auf reddit.com umgeleitet. Die App lädt deshalb im Hauptrahmen nur noch Seiten vom eigenen Server (gleiches Schema, gleicher Host, gleicher Port); alles andere wird verworfen. Ebenfalls geprüft.
     Einmal ging ▶ kurz nach einem Tipp zum nächsten Beitrag, statt den Zeiger zu bewegen; beim zweiten Versuch nicht. Beobachten.
+
+## 2026-11-05 – Rückmeldung zu Nr. 58–61
+
+62. Rückmeldung des Haushalts nach dem Deploy: „hat soweit funktioniert“ (Sendetag um 4 Uhr, Von vorn, Teilen nach dem Sendeschluss, Zeiger in Einbettungen). Offen bleiben: die YouTube-Annahme aus Nr. 60 mit einem echten Beispiel und die Beobachtung zu ▶ aus Nr. 61. Das nächtliche Backup auf dem NAS läuft (Kopie vom 4.11., 4 Uhr, in backups/).
+
+## 2026-11-05 – Plan Schritt 5, Teil 1: Schlagzeilen übersetzen
+
+63. Die Redaktion beginnt mit der Übersetzung der Weltblick-Schlagzeilen ins Deutsche (Nr. 47, Schritt 5), lokal auf dem Mac (Nr. 54).
+    - Ablauf: `abend redaktion` auf dem Mac holt offene Schlagzeilen per `GET /api/redaktion/translations/pending` vom Server, übersetzt sie einzeln und schreibt sie per `POST /api/redaktion/translations` zurück. Offen ist, was in die Sendung kommen kann: höchstens 48 Stunden alt, mit Bild oder Video, nicht Deutsch, noch nicht mit der aktuellen Prompt-Version übersetzt. Die Arbeit wird alle 10 Übersetzungen gespeichert, ein Lauf dauert höchstens 15 Minuten (SPEC §14).
+    - Zugang: Die Routen gibt es nur mit `ABEND_REDAKTION_TOKEN` in .env auf beiden Seiten (Bearer, Vergleich in konstanter Zeit), sonst 404. Grund: Im Heimnetz soll niemand Schlagzeilen umschreiben können, auch Kinder nicht.
+    - Speicher: neue Tabelle `translation` (Beitrag, Zielsprache, Text, Modell, Prompt-Version) in der Sendungsdatenbank; sie wird mit den Beiträgen nach drei Tagen gelöscht. Cache und llm_call_log liegen in data/redaktion.sqlite3 auf dem Mac.
+    - Am Fernseher steht die Übersetzung groß, das Original klein darunter. Die fremde Schrift bleibt so ein Hinweis beim Länderraten (Nr. 52), und jede Übersetzung lässt sich am Original prüfen. Ohne Übersetzung bleibt alles wie bisher (Notausgabe ohne Mac).
+    - Faktenprüfung (Invariante): Jede Ziffernfolge der Übersetzung muss im Original stehen, Ziffern jeder Schrift zählen als 0–9 (Devanagari, Arabisch-Indisch). Sonst wird die Übersetzung verworfen, die Sendung zeigt das Original. Damit fallen auch Umrechnungen weg („500 crore“ wird nicht zu „5 Milliarden“). Ebenso verworfen: mehrzeilige Antworten (Erläuterungen statt Übersetzung), leere und übermäßig lange.
+    - **Annahme:** Zitate lassen sich in einer Übersetzung nicht wörtlich gegen das Original prüfen. Die Prüfung ist hier, dass das Original immer daneben steht. Bitte bestätigen.
+    - Anbieter-Schnittstelle (SPEC §11.3): `redaktion/llm.py` mit Ollama als erstem Anbieter (`ABEND_LLM_PROVIDER=ollama`). Keine neue Python-Abhängigkeit, der Aufruf geht über httpx. Ollama 0.16 war auf dem Mac schon installiert.
+    - Modell: TranslateGemma 12B (`translategemma:12b`, 8,1 GB, Gemma-Lizenz). Das Modell liegt nur auf dem Mac, das Repo enthält es nicht. Verglichen am 5.11. mit 20 echten Schlagzeilen (Serbisch, Hindi, Urdu, Englisch):
+      - qwen2.5:14b ist unbrauchbar. Es macht aus „midterm“ „Mittelmeerwahlen“, aus „privedeni“ (festgenommen) „angefordert“ und aus Nike „Frauenkleider“. 52 s für 20 Schlagzeilen.
+      - TranslateGemma 12B trifft das in allen Fällen, 35 s für 20.
+      - Ein Sinnfehler blieb: Aus „unsere Niederlage“ wurde bei Urdu einmal „unser Wahlsieg“. Solche Fehler fängt die Zahlenprüfung nicht. Dafür steht das Original darunter.
+    - Zeitplan: launchd um 16:30, 18:30 und 19:40 (`make install-redaktion`), jeweils nach einem Quellenabruf des Servers. Läuft der Mac nicht, kommen die Schlagzeilen im Original.
+    - Verworfen: mehrere Schlagzeilen in einem Aufruf als JSON (TranslateGemma ist auf einzelne Texte trainiert; ein fehlerhaftes JSON würde alle verwerfen), Übersetzung auf dem NAS (zu wenig RAM, Nr. 28), nur fremde Schriften übersetzen (der Haushalt hat Kinder, auch Englisch soll verständlich sein).

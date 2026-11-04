@@ -14,7 +14,7 @@ from typing import Any
 from sqlalchemy import select
 
 from abendausgabe.core.db import Database
-from abendausgabe.core.models import RawItem
+from abendausgabe.core.models import RawItem, Translation
 from abendausgabe.modules.weltblick.catalog import Source
 
 FRESH = timedelta(hours=36)
@@ -66,8 +66,37 @@ def _source_line(item: RawItem, sources: dict[str, Source]) -> str:
     return f"{name}, {day.astimezone(UTC).strftime('%d.%m.%Y')}"
 
 
+def _translations(db: Database, items: list[RawItem]) -> dict[str, str]:
+    ids = [i.id for i in items]
+    if not ids:
+        return {}
+    with db.session() as s:
+        rows = s.scalars(
+            select(Translation).where(
+                Translation.raw_item_id.in_(ids), Translation.language == "de"
+            )
+        ).all()
+        return {t.raw_item_id: t.text for t in rows}
+
+
+def _caption(item: RawItem, translated: dict[str, str]) -> dict[str, Any]:
+    """Übersetzung groß, Original klein darunter; die Schrift bleibt ein Hinweis (Nr. 63)."""
+    text = translated.get(item.id)
+    if not text or item.language == "de":
+        return {"caption": item.title, "caption_lang": item.language}
+    return {
+        "caption": text,
+        "caption_lang": "de",
+        "caption_original": item.title,
+        "caption_original_lang": item.language,
+    }
+
+
 def guess_rounds(
-    items: list[RawItem], sources: dict[str, Source], rng: random.Random
+    items: list[RawItem],
+    sources: dict[str, Source],
+    rng: random.Random,
+    translated: dict[str, str] | None = None,
 ) -> list[dict[str, Any]]:
     candidates = [i for i in items if i.country in COUNTRY_DE and i.image]
     rng.shuffle(candidates)
@@ -91,8 +120,7 @@ def guess_rounds(
                 "type": "choice",
                 "title": "Weltblick",
                 "question": "Aus welchem Land kommt diese Meldung?",
-                "caption": item.title,
-                "caption_lang": item.language,
+                **_caption(item, translated or {}),
                 "media": {"kind": "image", "src": item.image},
                 "options": [COUNTRY_DE[c] for c in options],
                 "correct": options.index(item.country),
@@ -107,7 +135,10 @@ def guess_rounds(
 
 
 def video_round(
-    items: list[RawItem], sources: dict[str, Source], rng: random.Random
+    items: list[RawItem],
+    sources: dict[str, Source],
+    rng: random.Random,
+    translated: dict[str, str] | None = None,
 ) -> dict[str, Any] | None:
     videos = [i for i in items if i.video_json]
     if not videos:
@@ -123,8 +154,7 @@ def video_round(
         "poster": video.get("poster"),
         "vertical": bool(video.get("vertical")),
         "muted": True,  # startet stumm mit Text; ▲ schaltet den Ton ein (Nr. 48)
-        "caption": item.title,
-        "caption_lang": item.language,
+        **_caption(item, translated or {}),
         "attribution": _source_line(item, sources),
         "link": item.url,
         "raw_item_id": item.id,
@@ -138,8 +168,9 @@ def weltblick_blocks(db: Database, sources: list[Source], now: datetime) -> list
     rng = random.Random(today.isoformat())
     by_id = {s.id: s for s in sources}
     items = sorted(_fresh_items(db, now, today), key=lambda i: i.id)
-    blocks = guess_rounds(items, by_id, rng)
-    video = video_round(items, by_id, rng)
+    translated = _translations(db, items)
+    blocks = guess_rounds(items, by_id, rng, translated)
+    video = video_round(items, by_id, rng, translated)
     if video:
         blocks.append(video)
     return blocks

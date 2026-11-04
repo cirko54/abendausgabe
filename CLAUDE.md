@@ -75,7 +75,7 @@ Eingebaute Module stehen in `BUILTIN` in `modules/__init__.py`; Plugins melden s
 
 - Nur in der Redaktion (`edit.py`), nie im Live-Pfad.
 - Prompts als Dateien unter prompts/, versioniert; Ausgabe als JSON mit Pydantic-Validierung.
-- Modelle aus .env: `ABEND_MODEL_TRIAGE`, `ABEND_MODEL_EDITOR`. Die Namen vor der Implementierung unter docs.claude.com prüfen.
+- Modelle aus .env: heute lokal `ABEND_MODEL_TRANSLATE` über Ollama (decisions.md Nr. 54, 63); für die Claude-API später `ABEND_MODEL_TRIAGE`, `ABEND_MODEL_EDITOR`, die Namen vorher unter docs.claude.com prüfen.
 - Cache nach Hash aus Input und Prompt-Version.
 - Tagesbudget `ABEND_LLM_BUDGET_EUR` mit hartem Stopp; jeder Aufruf wird in llm_call_log protokolliert.
 
@@ -104,7 +104,7 @@ Eingebaute Module stehen in `BUILTIN` in `modules/__init__.py`; Plugins melden s
 ## Befehle
 
 - `uv run pytest`, `uv run ruff check .`, `uv run mypy src`
-- `uv run abend serve` (lokal, Port 8470), `uv run abend redaktion --date today` (Platzhalter)
+- `uv run abend serve` (lokal, Port 8470), `uv run abend redaktion` (auf dem Mac: Übersetzungen über Ollama, decisions.md Nr. 63; `make install-redaktion` für launchd)
 - `uv run abend reset-pin <person>`, `uv run abend backup <zieldatei>` (konsistente SQLite-Kopie)
 - `uv run abend init` legt config/people.yaml an; ohne config/ gilt der Beispielhaushalt aus config.example/.
 - `make deploy-nas`: Quelltext per tar aufs NAS (Host aus local.mk), dort per sudo deploy/nas/up.sh: Image bauen, `compose up -d`. Auf Synology braucht Docker sudo mit Passwort, also läuft dieser Schritt nur im Terminal des Nutzers.

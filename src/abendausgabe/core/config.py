@@ -43,6 +43,7 @@ class Settings:
     ntfy_url: str
     morning_push: time | None  # None: kein Morgen-Push
     youtube_api_key: str
+    redaktion_token: str  # leer: Redaktions-API aus
 
 
 @lru_cache
@@ -60,6 +61,7 @@ def get_settings() -> Settings:
         ntfy_url=os.environ.get("ABEND_NTFY_URL", "https://ntfy.sh").strip().rstrip("/"),
         morning_push=_env_time("ABEND_MORNING_PUSH", "08:30"),
         youtube_api_key=os.environ.get("ABEND_YOUTUBE_API_KEY", "").strip(),
+        redaktion_token=os.environ.get("ABEND_REDAKTION_TOKEN", "").strip(),
     )
 
 

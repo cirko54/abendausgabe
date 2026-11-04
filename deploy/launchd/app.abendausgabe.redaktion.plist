@@ -1,0 +1,38 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<!DOCTYPE plist PUBLIC "-//Apple//DTD PLIST 1.0//EN" "http://www.apple.com/DTDs/PropertyList-1.0.dtd">
+<!-- Redaktion auf dem Mac (decisions.md Nr. 63). `make install-redaktion` setzt die Pfade ein. -->
+<plist version="1.0">
+<dict>
+  <key>Label</key>
+  <string>app.abendausgabe.redaktion</string>
+  <key>ProgramArguments</key>
+  <array>
+    <string>@UV@</string>
+    <string>run</string>
+    <string>--project</string>
+    <string>@REPO@</string>
+    <string>abend</string>
+    <string>redaktion</string>
+  </array>
+  <key>WorkingDirectory</key>
+  <string>@REPO@</string>
+  <key>EnvironmentVariables</key>
+  <dict>
+    <key>PATH</key>
+    <string>/opt/homebrew/bin:/usr/local/bin:/usr/bin:/bin</string>
+  </dict>
+  <!-- Nach den Quellenabrufen auf dem Server (alle 2 Stunden), vor der Sendung -->
+  <key>StartCalendarInterval</key>
+  <array>
+    <dict><key>Hour</key><integer>16</integer><key>Minute</key><integer>30</integer></dict>
+    <dict><key>Hour</key><integer>18</integer><key>Minute</key><integer>30</integer></dict>
+    <dict><key>Hour</key><integer>19</integer><key>Minute</key><integer>40</integer></dict>
+  </array>
+  <key>StandardOutPath</key>
+  <string>@REPO@/data/redaktion.log</string>
+  <key>StandardErrorPath</key>
+  <string>@REPO@/data/redaktion.log</string>
+  <key>ProcessType</key>
+  <string>Background</string>
+</dict>
+</plist>

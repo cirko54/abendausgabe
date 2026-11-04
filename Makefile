@@ -9,7 +9,8 @@ BUILD_FILES = Dockerfile .dockerignore pyproject.toml README.md requirements.loc
               src web config.example catalog deploy
 TAR_EXCLUDES = --no-xattrs --no-mac-metadata --exclude='._*' --exclude='.DS_Store' --exclude='__pycache__' --exclude='*.pyc'
 
-.PHONY: dev test lint lock image-amd64 upload-nas deploy-nas migrate-db-nas logs-nas
+.PHONY: dev test lint lock image-amd64 upload-nas deploy-nas migrate-db-nas logs-nas \
+        install-redaktion uninstall-redaktion
 
 dev:
 	uv run abend serve --reload
@@ -48,3 +49,18 @@ migrate-db-nas:
 
 logs-nas:
 	ssh -t $(NAS) 'cd $(NAS_DIR) && sudo /usr/local/bin/docker compose logs --tail 100 -f app'
+
+# Redaktion auf dem Mac per launchd (16:30, 18:30, 19:40); Einstellungen in .env
+AGENT = $(HOME)/Library/LaunchAgents/app.abendausgabe.redaktion.plist
+install-redaktion:
+	@test -f .env || { echo ".env fehlt: ABEND_SERVER_URL und ABEND_REDAKTION_TOKEN eintragen (.env.example)."; exit 1; }
+	mkdir -p data
+	sed -e "s|@REPO@|$(CURDIR)|g" -e "s|@UV@|$$(command -v uv)|g" \
+	  deploy/launchd/app.abendausgabe.redaktion.plist > $(AGENT)
+	launchctl bootout gui/$$(id -u) $(AGENT) 2>/dev/null || true
+	launchctl bootstrap gui/$$(id -u) $(AGENT)
+	@echo "Redaktion eingerichtet. Sofort testen: launchctl kickstart gui/$$(id -u)/app.abendausgabe.redaktion; Log: data/redaktion.log"
+
+uninstall-redaktion:
+	launchctl bootout gui/$$(id -u) $(AGENT) 2>/dev/null || true
+	rm -f $(AGENT)

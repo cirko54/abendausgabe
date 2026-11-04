@@ -17,11 +17,12 @@ from typing import Any
 
 import feedparser  # type: ignore[import-untyped]
 import httpx
+from sqlalchemy import select
 
 from abendausgabe import __version__
 from abendausgabe.core import ratelimit
 from abendausgabe.core.db import Database
-from abendausgabe.core.models import RawItem
+from abendausgabe.core.models import RawItem, Translation
 from abendausgabe.modules.weltblick.catalog import Source
 
 log = logging.getLogger(__name__)
@@ -210,6 +211,10 @@ def store(db: Database, source: Source, items: list[dict[str, Any]], now: dateti
 def purge(db: Database, now: datetime) -> int:
     with db.session() as s:
         count = s.query(RawItem).filter(RawItem.expires_at < now).delete()
+        alive = select(RawItem.id)
+        s.query(Translation).filter(Translation.raw_item_id.not_in(alive)).delete(
+            synchronize_session=False
+        )
         s.commit()
         return count
 

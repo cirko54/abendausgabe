@@ -300,18 +300,31 @@
     );
   }
 
+  // Schlagzeile; mit Übersetzung aus der Redaktion steht das Original klein darunter.
+  function langAttr(lang) {
+    return lang ? ' lang="' + esc(lang) + '"' : "";
+  }
+
+  function captionHtml(block, cls) {
+    if (!block.caption) return "";
+    let out = '<p class="' + cls + '" dir="auto"' + langAttr(block.caption_lang) + ">" + esc(block.caption) + "</p>";
+    if (block.caption_original) {
+      out += '<p class="caption-original" dir="auto"' + langAttr(block.caption_original_lang) + ">" +
+        esc(block.caption_original) + "</p>";
+    }
+    return out;
+  }
+
   // Bild und Originalschlagzeile (Weltblick): links das Bild, rechts Text und Antworten.
   function withMedia(block, inner) {
     if (!block.media || block.media.kind !== "image") return inner;
     if (block.media.large) {
       return '<div class="media-big"><img src="' + esc(block.media.src) + '" alt=""></div>' + inner;
     }
-    const lang = block.caption_lang ? ' lang="' + esc(block.caption_lang) + '"' : "";
     return (
       '<div class="media-split"><div class="media-pic"><img src="' + esc(block.media.src) +
       '" alt="" referrerpolicy="no-referrer"></div><div class="media-text">' +
-      (block.caption ? '<p class="caption" dir="auto"' + lang + ">" + esc(block.caption) + "</p>" : "") +
-      inner + "</div></div>"
+      captionHtml(block, "caption") + inner + "</div></div>"
     );
   }
 
@@ -477,10 +490,7 @@
       '<p id="vid-flash" class="vid-flash"></p>' +
       '<div class="vid-progress"><span id="vid-time" class="vid-time"></span>' +
       '<div class="vid-track"><div id="vid-bar" class="vid-bar"></div></div></div>' +
-      (block.caption
-        ? '<p class="vid-caption" dir="auto"' + (block.caption_lang ? ' lang="' + esc(block.caption_lang) + '"' : "") + ">" +
-          esc(block.caption) + "</p>"
-        : "") +
+      (block.caption ? '<div class="vid-caption">' + captionHtml(block, "vid-caption-text") + "</div>" : "") +
       '<div class="vid-bottom"><span id="vid-hint" class="vid-hint">' +
       hintText(!!block.muted, "") + "</span></div>" +
       "</div>"

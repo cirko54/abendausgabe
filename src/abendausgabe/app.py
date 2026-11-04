@@ -15,7 +15,17 @@ from fastapi.responses import RedirectResponse
 from fastapi.staticfiles import StaticFiles
 
 from abendausgabe import __version__
-from abendausgabe.api import devices, media, mitbringsel, morning, profile, qr, tvcheck, ws
+from abendausgabe.api import (
+    devices,
+    media,
+    mitbringsel,
+    morning,
+    profile,
+    qr,
+    redaktion,
+    tvcheck,
+    ws,
+)
 from abendausgabe.assembly.notausgabe import build_program
 from abendausgabe.core.config import Settings, get_people, get_settings
 from abendausgabe.core.dates import BERLIN
@@ -147,6 +157,7 @@ def create_app() -> FastAPI:
         media.router,
         morning.router,
         mitbringsel.router,
+        redaktion.router,
         ws.router,
     )
     for router in routers:
