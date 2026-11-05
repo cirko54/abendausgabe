@@ -379,3 +379,4 @@ Offen für Phase 1: TV-Ergebnis hier eintragen, Router-Typ (Präsenz), Kalenderq
       - Übersetzung über einen Webdienst (Daten verlassen das Haus, Schlüssel nötig);
       - Wake-on-LAN vom NAS (der Mac hängt im WLAN);
       - die Claude-API als Rückfall (Kosten, Nr. 54; bleibt eine Option für später).
+    - Erster Lauf über launchd (5.11., 13:01): Der Zugriff auf das NAS scheiterte mit „No route to host“, aus dem Terminal klappt er. Ursache vermutlich der macOS-Schutz „Lokales Netzwerk“: Ein Hintergrundprogramm braucht eine Freigabe (Systemeinstellungen → Datenschutz & Sicherheit → Lokales Netzwerk, Eintrag python3.12). Nach einem Python-Update über uv kann sie erneut nötig sein. Zweiter Fehler: Mit dem knappen PATH von launchd fehlte `ioreg`; jetzt mit vollem Pfad und abgefangen.

@@ -115,7 +115,7 @@ ollama pull translategemma:12b
 openssl rand -hex 32          # Token, in .env auf Server und Mac als ABEND_REDAKTION_TOKEN
 ```
 
-Auf dem Mac in `.env` zusätzlich `ABEND_SERVER_URL=http://<Server-IP>:8470`. Dann den Server neu starten und auf dem Mac `uv run abend redaktion` einmal von Hand ausprobieren. `make install-redaktion` richtet einen Lauf um 19:30 ein (launchd, Log in `data/redaktion.log`). Er bearbeitet nur eine Vorauswahl von 40 Schlagzeilen und dauert wenige Minuten. Jede Übersetzung wird geprüft: Steht darin eine Zahl, die das Original nicht hat, bleibt die Schlagzeile im Original.
+Auf dem Mac in `.env` zusätzlich `ABEND_SERVER_URL=http://<Server-IP>:8470`. Dann den Server neu starten und auf dem Mac `uv run abend redaktion` einmal von Hand ausprobieren. `make install-redaktion` richtet einen Lauf um 19:30 ein (launchd, Log in `data/redaktion.log`). Er bearbeitet nur eine Vorauswahl von 40 Schlagzeilen und dauert wenige Minuten. Meldet das Log „No route to host“, braucht Python die Freigabe unter Systemeinstellungen → Datenschutz & Sicherheit → Lokales Netzwerk. Jede Übersetzung wird geprüft: Steht darin eine Zahl, die das Original nicht hat, bleibt die Schlagzeile im Original.
 
 Strom sparen: Mit `ABEND_REDAKTION_SLEEP_AFTER=15` geht der Mac nach dem Lauf in den Ruhezustand, wenn ihn seit 15 Minuten niemand benutzt hat. Wecken lässt er sich einmalig mit `sudo pmset repeat wake MTWRFSU 19:25:00`; dafür muss er schlafen, nicht ausgeschaltet sein (mit FileVault meldet sich nach dem Einschalten niemand an). Läuft der Mac nicht, kommt die Sendung trotzdem, nur ohne Übersetzung.
 

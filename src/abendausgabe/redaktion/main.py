@@ -83,6 +83,11 @@ def _minutes(value: str) -> float | None:
     return float(value)
 
 
+# Volle Pfade: launchd startet mit knappem PATH ohne /usr/sbin
+IOREG = "/usr/sbin/ioreg"
+PMSET = "/usr/bin/pmset"
+
+
 def _run(*cmd: str) -> str:
     return subprocess.run(cmd, capture_output=True, text=True, timeout=20, check=False).stdout
 
@@ -106,15 +111,22 @@ def maybe_sleep(config: Config) -> None:
     """Nach dem Lauf in den Ruhezustand, wenn niemand den Mac benutzt (Nr. 65)."""
     if config.sleep_after_min is None or sys.platform != "darwin":
         return
-    idle = idle_seconds(_run("ioreg", "-c", "IOHIDSystem", "-d", "4"))
-    if idle is None or idle < 60 * config.sleep_after_min:
+    try:
+        _sleep_if_idle(config.sleep_after_min)
+    except (OSError, subprocess.SubprocessError) as exc:
+        log.warning("Ruhezustand nicht geprüft: %s", exc)
+
+
+def _sleep_if_idle(minutes: float) -> None:
+    idle = idle_seconds(_run(IOREG, "-c", "IOHIDSystem", "-d", "4"))
+    if idle is None or idle < 60 * minutes:
         log.info("Mac wird benutzt (%s s ohne Eingabe), bleibt wach.", idle and round(idle))
         return
-    if display_kept_awake(_run("pmset", "-g", "assertions")):
+    if display_kept_awake(_run(PMSET, "-g", "assertions")):
         log.info("Ein Video oder eine Präsentation läuft, Mac bleibt wach.")
         return
     log.info("Niemand am Mac seit %d min: Ruhezustand.", idle // 60)
-    result = subprocess.run(["pmset", "sleepnow"], capture_output=True, text=True, check=False)
+    result = subprocess.run([PMSET, "sleepnow"], capture_output=True, text=True, check=False)
     if result.returncode != 0:
         log.warning("Ruhezustand ging nicht: %s", (result.stderr or result.stdout).strip())
 

@@ -19,7 +19,7 @@
   <key>EnvironmentVariables</key>
   <dict>
     <key>PATH</key>
-    <string>/opt/homebrew/bin:/usr/local/bin:/usr/bin:/bin</string>
+    <string>/opt/homebrew/bin:/usr/local/bin:/usr/bin:/bin:/usr/sbin:/sbin</string>
   </dict>
   <!-- Einmal am Abend, kurz vor der Sendung (decisions.md Nr. 65). Schläft der Mac um
        19:30, holt launchd den Lauf beim Aufwachen nach; wecken: sudo pmset repeat wake … -->
