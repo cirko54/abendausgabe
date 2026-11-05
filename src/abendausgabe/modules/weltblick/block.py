@@ -1,7 +1,8 @@
-"""Weltblick-Blöcke ohne LLM (decisions.md Nr. 52).
+"""Weltblick-Blöcke (decisions.md Nr. 52, 63, 64).
 
-Zwei Raterunden „Aus welchem Land kommt diese Meldung?“ mit Bild und Originalschlagzeile,
-dazu ein Kurzvideo. Alles aus der Datenbank (raw_item), damit der Sendestart nicht wartet.
+Zwei Raterunden „Wo spielt diese Meldung?“ mit Bild und Schlagzeile, dazu ein Kurzvideo.
+Ort und Übersetzung kommen aus der Redaktion; ohne sie gibt es die Schlagzeilen ohne Frage.
+Alles aus der Datenbank, damit der Sendestart nicht wartet.
 """
 
 from __future__ import annotations
@@ -14,29 +15,68 @@ from typing import Any
 from sqlalchemy import select
 
 from abendausgabe.core.db import Database
-from abendausgabe.core.models import RawItem, Translation
+from abendausgabe.core.models import ItemPlace, RawItem, Translation
 from abendausgabe.modules.weltblick.catalog import Source
 
 FRESH = timedelta(hours=36)
 ROUNDS = 2
 
 COUNTRY_DE = {
-    "AF": "Afghanistan", "AL": "Albanien", "AR": "Argentinien", "AU": "Australien",
-    "BA": "Bosnien und Herzegowina", "BD": "Bangladesch", "BR": "Brasilien", "CG": "Kongo",
-    "CL": "Chile", "EG": "Ägypten", "ET": "Äthiopien", "GB": "Großbritannien", "GH": "Ghana",
-    "HR": "Kroatien", "ID": "Indonesien", "IN": "Indien", "IR": "Iran", "JP": "Japan",
-    "KE": "Kenia", "LK": "Sri Lanka", "ME": "Montenegro", "MK": "Nordmazedonien",
-    "MX": "Mexiko", "NG": "Nigeria", "NP": "Nepal", "NZ": "Neuseeland", "PH": "Philippinen",
-    "PK": "Pakistan", "PL": "Polen", "QA": "Katar", "RS": "Serbien", "RU": "Russland",
-    "SN": "Senegal", "UA": "Ukraine", "US": "USA", "UY": "Uruguay", "XK": "Kosovo",
-    "ZA": "Südafrika",
+    "AE": "Vereinigte Arabische Emirate", "AF": "Afghanistan", "AL": "Albanien",
+    "AM": "Armenien", "AR": "Argentinien", "AT": "Österreich", "AU": "Australien",
+    "AZ": "Aserbaidschan", "BA": "Bosnien und Herzegowina", "BD": "Bangladesch",
+    "BE": "Belgien", "BG": "Bulgarien", "BO": "Bolivien", "BR": "Brasilien", "BY": "Belarus",
+    "CA": "Kanada", "CD": "DR Kongo", "CG": "Kongo", "CH": "Schweiz", "CL": "Chile",
+    "CM": "Kamerun", "CN": "China", "CO": "Kolumbien", "CU": "Kuba", "CZ": "Tschechien",
+    "DE": "Deutschland", "DK": "Dänemark", "DZ": "Algerien", "EC": "Ecuador", "EG": "Ägypten",
+    "ES": "Spanien", "ET": "Äthiopien", "FI": "Finnland", "FR": "Frankreich",
+    "GB": "Großbritannien", "GE": "Georgien", "GH": "Ghana", "GR": "Griechenland",
+    "HR": "Kroatien", "HU": "Ungarn", "ID": "Indonesien", "IE": "Irland", "IL": "Israel",
+    "IN": "Indien", "IQ": "Irak", "IR": "Iran", "IT": "Italien", "JO": "Jordanien",
+    "JP": "Japan", "KE": "Kenia", "KP": "Nordkorea", "KR": "Südkorea", "KZ": "Kasachstan",
+    "LB": "Libanon", "LK": "Sri Lanka", "LY": "Libyen", "MA": "Marokko", "MD": "Moldau",
+    "ME": "Montenegro", "MK": "Nordmazedonien", "ML": "Mali", "MM": "Myanmar", "MX": "Mexiko",
+    "MY": "Malaysia", "NE": "Niger", "NG": "Nigeria", "NL": "Niederlande", "NO": "Norwegen",
+    "NP": "Nepal", "NZ": "Neuseeland", "PE": "Peru", "PH": "Philippinen", "PK": "Pakistan",
+    "PL": "Polen", "PS": "Palästinensische Gebiete", "PT": "Portugal", "PY": "Paraguay",
+    "QA": "Katar", "RO": "Rumänien", "RS": "Serbien", "RU": "Russland", "RW": "Ruanda",
+    "SA": "Saudi-Arabien", "SD": "Sudan", "SE": "Schweden", "SI": "Slowenien",
+    "SK": "Slowakei", "SN": "Senegal", "SO": "Somalia", "SS": "Südsudan", "SY": "Syrien",
+    "TD": "Tschad", "TH": "Thailand", "TN": "Tunesien", "TR": "Türkei", "TW": "Taiwan",
+    "TZ": "Tansania", "UA": "Ukraine", "UG": "Uganda", "US": "USA", "UY": "Uruguay",
+    "VE": "Venezuela", "VN": "Vietnam", "XK": "Kosovo", "YE": "Jemen", "ZA": "Südafrika",
+    "ZW": "Simbabwe",
 }  # fmt: skip
 # Ablenker aus der Nachbarschaft machen das Raten interessanter als Zufallsländer
 NEIGHBOURS = {
     "IN": ["PK", "BD", "NP", "LK"], "PK": ["IN", "AF", "IR", "BD"], "AF": ["PK", "IR", "IN"],
-    "RS": ["HR", "BA", "MK", "ME", "XK"], "UA": ["RU", "PL"], "RU": ["UA", "PL"],
-    "AU": ["NZ", "PH", "ID"], "NG": ["GH", "KE", "SN"], "CG": ["NG", "KE", "SN"],
-    "UY": ["AR", "BR", "CL"],
+    "RS": ["HR", "BA", "MK", "ME", "XK"], "HR": ["RS", "BA", "SI"], "BA": ["RS", "HR", "ME"],
+    "UA": ["RU", "PL", "BY", "MD"], "RU": ["UA", "BY", "KZ"], "BY": ["UA", "RU", "PL"],
+    "AU": ["NZ", "PH", "ID"], "NZ": ["AU"], "NG": ["GH", "CM", "NE"], "GH": ["NG", "SN"],
+    "CG": ["CD", "CM"], "CD": ["CG", "RW", "UG"], "KE": ["TZ", "UG", "ET", "SO"],
+    "ET": ["KE", "SO", "SD"], "SD": ["SS", "EG", "TD"], "UY": ["AR", "BR", "PY"],
+    "AR": ["UY", "CL", "BR"], "BR": ["AR", "CO", "PE"], "US": ["CA", "MX"], "CA": ["US"],
+    "MX": ["US", "CU"], "VE": ["CO", "BR", "CU"], "IL": ["LB", "SY", "JO", "EG"],
+    "PS": ["IL", "JO", "EG"], "LB": ["SY", "IL", "JO"], "SY": ["LB", "IQ", "TR"],
+    "IR": ["IQ", "AF", "TR"], "IQ": ["IR", "SY", "SA"], "SA": ["YE", "QA", "AE"],
+    "YE": ["SA", "SO"], "EG": ["LY", "SD", "IL"], "LY": ["EG", "TN", "DZ", "TD"],
+    "CN": ["TW", "JP", "KR"], "TW": ["CN", "JP", "PH"], "JP": ["KR", "CN", "TW"],
+    "KR": ["KP", "JP", "CN"], "KP": ["KR", "CN"], "GB": ["IE", "FR"], "FR": ["BE", "ES", "IT"],
+    "DE": ["AT", "CH", "PL"], "ES": ["PT", "FR", "IT"], "IT": ["FR", "AT", "SI"],
+    "TR": ["GR", "SY", "BG"], "GR": ["TR", "BG", "AL"], "GE": ["AM", "AZ", "RU"],
+    "MM": ["TH", "BD", "IN"], "TH": ["MM", "VN", "MY"], "VN": ["TH", "CN"],
+    "ID": ["MY", "PH", "AU"], "PH": ["ID", "VN", "TW"], "BD": ["IN", "MM", "NP"],
+    "NP": ["IN", "BD"], "LK": ["IN", "BD"], "ZA": ["ZW", "KE"], "SN": ["ML", "GH"],
+}  # fmt: skip
+# Steht das Land schon in der Schlagzeile, ist die Frage keine (decisions.md Nr. 64)
+COUNTRY_HINTS = {
+    "US": ("usa", "us-", "amerika", "vereinigte staaten", "washington"),
+    "GB": ("brit", "großbritannien", "england", "vereinigtes königreich", "london"),
+    "NL": ("niederl", "holl"), "CZ": ("tschech",), "KR": ("südkorea", "korea"),
+    "KP": ("nordkorea", "korea"), "PS": ("paläst", "gaza", "westjordan"),
+    "AE": ("emirat",), "CD": ("kongo",), "CG": ("kongo",), "SS": ("südsudan", "sudan"),
+    "BA": ("bosni",), "MK": ("mazedon",), "XK": ("kosov",), "CH": ("schweiz",),
+    "DE": ("deutsch",), "SA": ("saudi",), "ZA": ("südafrika",),
 }  # fmt: skip
 
 
@@ -79,6 +119,17 @@ def _translations(db: Database, items: list[RawItem]) -> dict[str, str]:
         return {t.raw_item_id: t.text for t in rows}
 
 
+def _places(db: Database, items: list[RawItem]) -> dict[str, ItemPlace]:
+    ids = [i.id for i in items]
+    if not ids:
+        return {}
+    with db.session() as s:
+        rows = s.scalars(
+            select(ItemPlace).where(ItemPlace.raw_item_id.in_(ids), ItemPlace.country != "")
+        ).all()
+        return {p.raw_item_id: p for p in rows}
+
+
 def _caption(item: RawItem, translated: dict[str, str]) -> dict[str, Any]:
     """Übersetzung groß, Original klein darunter; die Schrift bleibt ein Hinweis (Nr. 63)."""
     text = translated.get(item.id)
@@ -92,39 +143,67 @@ def _caption(item: RawItem, translated: dict[str, str]) -> dict[str, Any]:
     }
 
 
+def _names_country(caption: str, country: str) -> bool:
+    text = caption.lower()
+    stem = COUNTRY_DE[country].lower()[:4]
+    return stem in text or any(h in text for h in COUNTRY_HINTS.get(country, ()))
+
+
+def _source_with_home(item: RawItem, sources: dict[str, Source]) -> str:
+    home = COUNTRY_DE.get(item.country)
+    line = _source_line(item, sources)
+    return line.replace(", ", f" aus {home}, ", 1) if home else line
+
+
 def guess_rounds(
     items: list[RawItem],
     sources: dict[str, Source],
     rng: random.Random,
     translated: dict[str, str] | None = None,
+    places: dict[str, ItemPlace] | None = None,
 ) -> list[dict[str, Any]]:
-    candidates = [i for i in items if i.country in COUNTRY_DE and i.image]
+    """„Wo spielt diese Meldung?“ (decisions.md Nr. 64).
+
+    Gefragt wird nach dem Land, um das es geht, nicht nach dem Land der Zeitung. Das
+    weiß nur die Redaktion; ohne sie kommen die Schlagzeilen ohne Frage (headline_cards).
+    """
+    translated, places = translated or {}, places or {}
+
+    def caption(i: RawItem) -> str:
+        return translated.get(i.id) or i.title
+
+    candidates = [
+        i for i in items
+        if i.image and i.id in places and places[i.id].country in COUNTRY_DE
+        and not _names_country(caption(i), places[i.id].country)
+    ]  # fmt: skip
     rng.shuffle(candidates)
-    pool = sorted({i.country for i in candidates} | set(NEIGHBOURS))
-    # eine Runde in einer Sprache außer Englisch, falls vorhanden; sonst bunt gemischt
+    pool = sorted({places[i.id].country for i in candidates} | set(NEIGHBOURS))
+    # eine Runde aus einer Quelle in fremder Sprache, falls vorhanden; sonst bunt gemischt
     foreign = [i for i in candidates if i.language != "en"]
     ordered = foreign[:1] + [i for i in candidates if i not in foreign[:1]]
     chosen: list[RawItem] = []
     for item in ordered:
-        if item.country not in {c.country for c in chosen}:
+        if places[item.id].country not in {places[c.id].country for c in chosen}:
             chosen.append(item)
         if len(chosen) == ROUNDS:
             break
     blocks = []
     for n, item in enumerate(chosen, start=1):
-        options = [item.country, *_distractors(item.country, pool, rng)]
+        where = places[item.id]
+        options = [where.country, *_distractors(where.country, pool, rng)]
         rng.shuffle(options)
         blocks.append(
             {
                 "id": f"weltblick-{n}",
                 "type": "choice",
                 "title": "Weltblick",
-                "question": "Aus welchem Land kommt diese Meldung?",
-                **_caption(item, translated or {}),
+                "question": "Wo spielt diese Meldung?",
+                **_caption(item, translated),
                 "media": {"kind": "image", "src": item.image},
                 "options": [COUNTRY_DE[c] for c in options],
-                "correct": options.index(item.country),
-                "source": _source_line(item, sources),
+                "correct": options.index(where.country),
+                "source": f"{_source_with_home(item, sources)} · Ort: {where.place}",
                 "link": item.url,
                 "raw_item_id": item.id,
                 "timeout_s": 45,
@@ -132,6 +211,40 @@ def guess_rounds(
             }
         )
     return blocks
+
+
+def headline_cards(
+    items: list[RawItem],
+    sources: dict[str, Source],
+    rng: random.Random,
+    translated: dict[str, str] | None = None,
+) -> list[dict[str, Any]]:
+    """Ohne Redaktion: Schlagzeilen mit Bild und Quelle, ohne Frage (Notausgabe)."""
+    candidates = [i for i in items if i.image]
+    rng.shuffle(candidates)
+    foreign = [i for i in candidates if i.language != "en"]
+    ordered = foreign[:1] + [i for i in candidates if i not in foreign[:1]]
+    chosen: list[RawItem] = []
+    for item in ordered:
+        if item.source_id not in {c.source_id for c in chosen}:
+            chosen.append(item)
+        if len(chosen) == ROUNDS:
+            break
+    return [
+        {
+            "id": f"weltblick-{n}",
+            "type": "info",
+            "title": "Weltblick",
+            **_caption(item, translated or {}),
+            "media": {"kind": "image", "src": item.image},
+            "body": "",
+            "credit": _source_with_home(item, sources),
+            "link": item.url,
+            "raw_item_id": item.id,
+            "est_minutes": 1,
+        }
+        for n, item in enumerate(chosen, start=1)
+    ]
 
 
 def video_round(
@@ -169,7 +282,9 @@ def weltblick_blocks(db: Database, sources: list[Source], now: datetime) -> list
     by_id = {s.id: s for s in sources}
     items = sorted(_fresh_items(db, now, today), key=lambda i: i.id)
     translated = _translations(db, items)
-    blocks = guess_rounds(items, by_id, rng, translated)
+    blocks = guess_rounds(items, by_id, rng, translated, _places(db, items))
+    if not blocks:
+        blocks = headline_cards(items, by_id, rng, translated)
     video = video_round(items, by_id, rng, translated)
     if video:
         blocks.append(video)

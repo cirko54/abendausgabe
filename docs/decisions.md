@@ -339,3 +339,21 @@ Offen für Phase 1: TV-Ergebnis hier eintragen, Router-Typ (Präsenz), Kalenderq
       - Ein Sinnfehler blieb: Aus „unsere Niederlage“ wurde bei Urdu einmal „unser Wahlsieg“. Solche Fehler fängt die Zahlenprüfung nicht. Dafür steht das Original darunter.
     - Zeitplan: launchd um 16:30, 18:30 und 19:40 (`make install-redaktion`), jeweils nach einem Quellenabruf des Servers. Läuft der Mac nicht, kommen die Schlagzeilen im Original.
     - Verworfen: mehrere Schlagzeilen in einem Aufruf als JSON (TranslateGemma ist auf einzelne Texte trainiert; ein fehlerhaftes JSON würde alle verwerfen), Übersetzung auf dem NAS (zu wenig RAM, Nr. 28), nur fremde Schriften übersetzen (der Haushalt hat Kinder, auch Englisch soll verständlich sein).
+
+## 2026-11-05 – Weltblick: „Wo spielt diese Meldung?“
+
+64. Rückmeldung des Haushalts: Die Frage „Aus welchem Land kommt diese Meldung?“ führt in die Irre. Viele Meldungen handeln von einem anderen Land, und dann ist es relativ egal, aus welchem Land das Medium stammt. Am 5.11. zum Beispiel berichteten Medien aus Indien, Pakistan und Serbien über die US-Zwischenwahlen. Neu:
+    - Die Raterunde fragt „Wo spielt diese Meldung?“. Die Antwort ist das Land, in dem das Berichtete geschieht. Die Auflösung nennt den Ort und wer berichtet hat („Quelle: NDTV aus Indien, 3.11.2026 · Ort: Saporischschja“).
+    - Wo eine Meldung spielt, bestimmt die Redaktion auf dem Mac nach der Übersetzung, aus dem deutschen Text. Modell `qwen2.5:14b` (`ABEND_MODEL_LOCATE`), Antwort als JSON nach Schema, mit Pydantic geprüft. Gemma 3 lässt sich mit der installierten Ollama-Version 0.16 nicht laden; ein Update von Ollama habe ich nicht gemacht, weil der Dienst von einer anderen App gestartet wird.
+    - Doppelte Prüfung, damit keine falsche Antwort in die Sendung kommt:
+      - Der Ort muss wörtlich im deutschen Text stehen, den der Fernseher zeigt.
+      - Nominatim (OpenStreetMap) muss ihn demselben Land zuordnen wie das Modell.
+      - Sonst gibt es zu dieser Meldung keine Frage; das Ergebnis „ohne Ort“ wird trotzdem gespeichert, damit sie nicht jeden Lauf neu geprüft wird.
+      - Nominatim fragt die Redaktion auf dem Mac ab, höchstens 1 Anfrage pro Sekunde (zentraler Ratelimiter), eigener User-Agent, Cache in data/redaktion.sqlite3.
+      - Koordinaten werden mitgespeichert (Tabelle `item_place`), für das Ortsraten auf der Karte (Weltecke, SPEC §8.3).
+    - Geschenkte Fragen fallen weg: Steht das Land schon in der Schlagzeile („Spanien: …“, „ukrainische Armee …“), kommt die Meldung nicht als Frage.
+    - Ohne Redaktion (Notausgabe, Mac aus) gibt es keine Länderfrage mehr. Der Weltblick zeigt dann zwei Schlagzeilen mit Bild und Quelle, ohne Frage. Eine irreführende Frage ist schlechter als keine.
+    - Das Land des Mediums bleibt interessant, wenn mehrere Länder über dieselbe Geschichte berichten. Das kommt als Blickwinkel-Vergleich (Nr. 47, Schritt 5) zurück, etwa „Aus welchem Land kommt dieser Blick auf die US-Wahl?“. SPEC §2.1 ist entsprechend angepasst.
+    - Lauf am 5.11. mit echten Schlagzeilen: 300 geprüft, 95 verortet, 10 von Nominatim verworfen (darunter Komyshuvakha, vom Modell Russland zugeordnet, und die Krim). Im Headless-Chrome geprüft: Frage, Auflösung mit Quelle und Ort, Übersetzung mit Original darunter.
+    - **Annahme:** So umgesetzt ohne Rückfrage; bitte am Fernseher prüfen, ob die Frage so trägt.
+    - Nebenbei aufgefallen: N1 Srbija liefert im selben Feed auch englische Meldungen (/english/), im Katalog steht Serbisch. Die Übersetzung stört das nicht, nur der Hinweis über die Sprache stimmt dann nicht.

@@ -41,6 +41,8 @@ _BUCKETS: dict[str, TokenBucket] = {
     "bluesky": TokenBucket(capacity=60, per_seconds=3600),
     # Mitbringsel: Metadaten zu geteilten Links (oEmbed, Seitenkopf)
     "mitbringsel": TokenBucket(capacity=60, per_seconds=3600),
+    # Nominatim: höchstens 1 Anfrage pro Sekunde (CLAUDE.md), nur in der Redaktion
+    "nominatim": TokenBucket(capacity=1, per_seconds=1),
 }
 
 
@@ -50,3 +52,16 @@ def acquire(source: str) -> None:
         raise KeyError(f"Kein Ratelimit für Quelle {source!r} definiert.")
     if not bucket.try_acquire():
         raise RateLimitedError(f"Ratelimit für {source} erreicht.")
+
+
+def wait(source: str, timeout_s: float = 30.0) -> None:
+    """Blockierend warten, bis eine Anfrage erlaubt ist (nur außerhalb des Servers)."""
+    deadline = time.monotonic() + timeout_s
+    while True:
+        try:
+            acquire(source)
+            return
+        except RateLimitedError:
+            if time.monotonic() > deadline:
+                raise
+            time.sleep(0.1)

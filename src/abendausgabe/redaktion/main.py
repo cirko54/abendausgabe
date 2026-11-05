@@ -1,11 +1,12 @@
 """Redaktionslauf auf dem Mac (SPEC §11.1, decisions.md Nr. 63).
 
 Holt offene Arbeit per API vom Server, lässt das LLM sie bearbeiten, prüft und schreibt
-das Ergebnis zurück. Heute: Schlagzeilen im Weltblick übersetzen.
+das Ergebnis zurück. Heute: Schlagzeilen im Weltblick übersetzen (Nr. 63), danach
+bestimmen, wo die Meldung spielt (Nr. 64).
 
 Einstellungen aus der Umgebung oder aus `.env` neben dem Repo (ABEND_ENV_FILE):
 ABEND_SERVER_URL, ABEND_REDAKTION_TOKEN, ABEND_LLM_PROVIDER, ABEND_OLLAMA_URL,
-ABEND_MODEL_TRANSLATE, ABEND_LLM_BUDGET_EUR, ABEND_REDAKTION_MAX_MIN.
+ABEND_MODEL_TRANSLATE, ABEND_MODEL_LOCATE, ABEND_LLM_BUDGET_EUR, ABEND_REDAKTION_MAX_MIN.
 """
 
 from __future__ import annotations
@@ -21,7 +22,8 @@ import httpx
 
 from abendausgabe.core.config import PROJECT_ROOT
 from abendausgabe.modules.weltblick import edit as weltblick_edit
-from abendausgabe.modules.weltblick.translations import Pending
+from abendausgabe.modules.weltblick.geocode import Geocoder
+from abendausgabe.modules.weltblick.translations import Pending, PendingPlace, Place
 from abendausgabe.redaktion.llm import LLM, BudgetExceededError, LLMError, OllamaProvider
 
 log = logging.getLogger("abendausgabe.redaktion")
@@ -47,6 +49,7 @@ class Config:
     provider: str
     ollama_url: str
     model_translate: str
+    model_locate: str
     budget_eur: float
     max_seconds: float
     store: Path
@@ -60,6 +63,7 @@ class Config:
             provider=os.environ.get("ABEND_LLM_PROVIDER", "ollama").strip().lower(),
             ollama_url=os.environ.get("ABEND_OLLAMA_URL", "http://localhost:11434"),
             model_translate=os.environ.get("ABEND_MODEL_TRANSLATE", "translategemma:12b"),
+            model_locate=os.environ.get("ABEND_MODEL_LOCATE", "qwen2.5:14b"),
             budget_eur=float(os.environ.get("ABEND_LLM_BUDGET_EUR", "1.00")),
             max_seconds=60 * float(os.environ.get("ABEND_REDAKTION_MAX_MIN", "15")),
             store=data_dir / "redaktion.sqlite3",
@@ -95,21 +99,51 @@ class Server:
         response.raise_for_status()
         return int(response.json()["saved"])
 
+    def pending_places(self, prompt_version: str) -> list[PendingPlace]:
+        response = self.client.get(
+            "/api/redaktion/places/pending", params={"prompt_version": prompt_version}
+        )
+        response.raise_for_status()
+        return [
+            PendingPlace(i["id"], i["title"], i["text"], i["language"])
+            for i in response.json()["items"]
+        ]
 
-def make_llm(config: Config) -> LLM:
+    def save_places(self, model: str, version: str, places: list[Place]) -> int:
+        if not places:
+            return 0
+        response = self.client.post(
+            "/api/redaktion/places",
+            json={
+                "model": model,
+                "prompt_version": version,
+                "items": [
+                    {"raw_item_id": p.raw_item_id, "country": p.country, "place": p.place,
+                     "lat": p.lat, "lon": p.lon}
+                    for p in places
+                ],
+            },
+        )  # fmt: skip
+        response.raise_for_status()
+        return int(response.json()["saved"])
+
+
+def make_llm(config: Config, model: str) -> LLM:
     if config.provider != "ollama":
         raise LLMError(
             f"ABEND_LLM_PROVIDER={config.provider!r} gibt es noch nicht; heute nur „ollama“ "
             "(decisions.md Nr. 54)."
         )
-    provider = OllamaProvider(config.model_translate, config.ollama_url)
+    provider = OllamaProvider(model, config.ollama_url)
     return LLM(provider, config.store, config.budget_eur)
 
 
-def translate_headlines(config: Config, server: Server, llm: LLM) -> dict[str, int]:
+def translate_headlines(
+    config: Config, server: Server, llm: LLM, deadline: float | None = None
+) -> dict[str, int]:
     template = weltblick_edit.prompt()
     items = server.pending_translations(template.version)
-    deadline = time.monotonic() + config.max_seconds
+    deadline = deadline or time.monotonic() + config.max_seconds
     done: list[tuple[str, str]] = []
     counts = {"offen": len(items), "übersetzt": 0, "verworfen": 0, "gespeichert": 0}
     for n, item in enumerate(items, start=1):
@@ -129,6 +163,30 @@ def translate_headlines(config: Config, server: Server, llm: LLM) -> dict[str, i
     return counts
 
 
+def locate_headlines(
+    config: Config, server: Server, llm: LLM, geocoder: Geocoder, deadline: float | None = None
+) -> dict[str, int]:
+    template = weltblick_edit.locate_prompt()
+    items = server.pending_places(template.version)
+    deadline = deadline or time.monotonic() + config.max_seconds
+    done: list[Place] = []
+    counts = {"offen": len(items), "verortet": 0, "ohne Ort": 0, "gespeichert": 0}
+    for n, item in enumerate(items, start=1):
+        if time.monotonic() > deadline:
+            log.warning("Zeit um (ABEND_REDAKTION_MAX_MIN): %d bleiben offen.", len(items) - n + 1)
+            break
+        place = weltblick_edit.locate(item, llm, template, geocoder)
+        if place is None:
+            continue
+        counts["verortet" if place.country else "ohne Ort"] += 1
+        done.append(place)
+        if len(done) >= PUSH_EVERY:
+            counts["gespeichert"] += server.save_places(llm.model, template.version, done)
+            done = []
+    counts["gespeichert"] += server.save_places(llm.model, template.version, done)
+    return counts
+
+
 def run(date: str) -> int:
     logging.basicConfig(level=logging.INFO, format="%(asctime)s %(levelname)s %(message)s")
     load_env_file(Path(os.environ.get("ABEND_ENV_FILE", PROJECT_ROOT / ".env")))
@@ -139,9 +197,13 @@ def run(date: str) -> int:
     if date != "today":
         log.warning("--date %s: Die Redaktion arbeitet immer mit dem heutigen Stand.", date)
     started = datetime.now(UTC)
+    deadline = time.monotonic() + config.max_seconds
     try:
-        llm = make_llm(config)
-        counts = translate_headlines(config, Server(config), llm)
+        server = Server(config)
+        llm = make_llm(config, config.model_translate)
+        counts = translate_headlines(config, server, llm, deadline)
+        locator = make_llm(config, config.model_locate)
+        places = locate_headlines(config, server, locator, Geocoder(config.store), deadline)
     except BudgetExceededError as exc:
         log.error("%s", exc)
         return 3
@@ -158,9 +220,10 @@ def run(date: str) -> int:
         return 5
     stats = llm.stats(started)
     log.info(
-        "Schlagzeilen: %s. LLM: %d Aufrufe (%d aus dem Cache, %d fehlgeschlagen), %d s, "
-        "heute %.2f €.",
+        "Übersetzung: %s. Orte: %s. LLM: %d Aufrufe (%d aus dem Cache, %d fehlgeschlagen), "
+        "%d s, heute %.2f €.",
         ", ".join(f"{v} {k}" for k, v in counts.items()),
+        ", ".join(f"{v} {k}" for k, v in places.items()),
         stats["calls"],
         stats["cached"],
         stats["failed"],

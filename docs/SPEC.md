@@ -35,7 +35,7 @@ Filterblasen arbeiten gegen den sozialen Kitt einer Gesellschaft; die Abendausga
 
 - Brücke statt Bruch: Fremdes kommt über einen eigenen Zugang herein, etwa ein Fremdthema über ein bekanntes Hobby, eine ferne Region über ein vertrautes Problem.
 - Dosis pro Person: Wie weit ein Block vom Gewohnten wegführt und wie scharf er provoziert, lernt das System aus „zu leicht“/„zu zäh“, Skips und dem Morgen-danach-Wert, nie aus der Verweildauer. Manche brauchen einen sanften Einstieg, andere den Widerspruch.
-- Spiel statt Predigt: Die fremde Perspektive kommt als Rätsel („Aus welchem Land stammt diese Schlagzeile?“, „Wer hat darüber nicht berichtet?“). Raten macht neugierig, Belehren macht trotzig.
+- Spiel statt Predigt: Die fremde Perspektive kommt als Rätsel („Wo spielt diese Meldung?“, „Aus welchem Land kommt dieser Blick auf die US-Wahl?“, „Wer hat darüber nicht berichtet?“). Raten macht neugierig, Belehren macht trotzig.
 - Freiwilligkeit bleibt sichtbar: Jeder Block lässt sich überspringen. Ein übersprungener Block ist ein Signal für die Dosis, kein Fehler, und wird nie vorgehalten.
 - Der Tisch als Hebel: Die wirksamste fremde Perspektive sitzt oft auf dem Sofa. Spotlight-Blöcke lassen Einzelne ihr Thema mitbringen und erklären; Auflösungen sind Anlass zum Gespräch, nicht dessen Ende.
 - Zufall: Ein kleiner Anteil echter Überraschung, damit der Abend nicht berechenbar wird.

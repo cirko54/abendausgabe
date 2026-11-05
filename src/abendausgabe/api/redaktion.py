@@ -53,3 +53,37 @@ def pending(prompt_version: str, db: Database = Depends(require_redaktion)) -> d
 def save(body: TranslationsIn, db: Database = Depends(require_redaktion)) -> dict[str, int]:
     pairs = [(i.raw_item_id, i.text) for i in body.items]
     return {"saved": translations.save(db, pairs, body.model, body.prompt_version)}
+
+
+class PlaceIn(BaseModel):
+    raw_item_id: str = Field(max_length=40)
+    country: str = Field(max_length=2)
+    place: str = Field(max_length=200)
+    lat: float | None = Field(default=None, ge=-90, le=90)
+    lon: float | None = Field(default=None, ge=-180, le=180)
+
+
+class PlacesIn(BaseModel):
+    model: str = Field(max_length=80)
+    prompt_version: str = Field(max_length=16)
+    items: list[PlaceIn] = Field(max_length=500)
+
+
+@router.get("/places/pending")
+def pending_places(
+    prompt_version: str, db: Database = Depends(require_redaktion)
+) -> dict[str, Any]:
+    rows = translations.pending_places(db, datetime.now(UTC), prompt_version[:16])
+    return {
+        "items": [
+            {"id": r.id, "title": r.title, "text": r.text, "language": r.language} for r in rows
+        ]
+    }
+
+
+@router.post("/places")
+def save_places(body: PlacesIn, db: Database = Depends(require_redaktion)) -> dict[str, int]:
+    places = [
+        translations.Place(i.raw_item_id, i.country, i.place, i.lat, i.lon) for i in body.items
+    ]
+    return {"saved": translations.save_places(db, places, body.model, body.prompt_version)}

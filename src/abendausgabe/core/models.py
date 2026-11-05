@@ -4,7 +4,7 @@ from __future__ import annotations
 
 from datetime import UTC, date, datetime
 
-from sqlalchemy import Date, DateTime, Integer, String, Text, UniqueConstraint
+from sqlalchemy import Date, DateTime, Float, Integer, String, Text, UniqueConstraint
 from sqlalchemy.orm import Mapped, mapped_column
 
 from abendausgabe.core.db import Base
@@ -185,6 +185,23 @@ class Translation(Base):
     raw_item_id: Mapped[str] = mapped_column(String(40), primary_key=True)
     language: Mapped[str] = mapped_column(String(16), primary_key=True)  # Zielsprache, heute „de“
     text: Mapped[str] = mapped_column(Text)
+    model: Mapped[str] = mapped_column(String(80))
+    prompt_version: Mapped[str] = mapped_column(String(16))
+    created_at: Mapped[datetime] = mapped_column(DateTime(timezone=True), default=utcnow)
+
+
+class ItemPlace(Base):
+    """Wo eine Meldung spielt, aus der Redaktion und geokodiert (decisions.md Nr. 64).
+
+    country leer: Die Meldung spielt an keinem bestimmten Ort, oder die Prüfung schlug fehl.
+    """
+
+    __tablename__ = "item_place"
+    raw_item_id: Mapped[str] = mapped_column(String(40), primary_key=True)
+    country: Mapped[str] = mapped_column(String(2), default="")
+    place: Mapped[str] = mapped_column(String(200), default="")
+    lat: Mapped[float | None] = mapped_column(Float, nullable=True)
+    lon: Mapped[float | None] = mapped_column(Float, nullable=True)
     model: Mapped[str] = mapped_column(String(80))
     prompt_version: Mapped[str] = mapped_column(String(16))
     created_at: Mapped[datetime] = mapped_column(DateTime(timezone=True), default=utcnow)

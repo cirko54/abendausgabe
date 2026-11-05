@@ -101,14 +101,16 @@ def _store(db: Database) -> None:
 def test_weltblick_rounds_and_video(db: Database) -> None:
     _store(db)
     blocks = wb.weltblick_blocks(db, [SERBIA, AGENCY], NOW)
-    rounds = [b for b in blocks if b["type"] == "choice"]
-    assert len(rounds) == 2
-    assert rounds[0]["caption_lang"] == "sr"  # Fremdsprache zuerst
-    for r in rounds:
-        assert len(set(r["options"])) == 3
-        assert r["media"]["src"].startswith("https://")
-    answers = {r["options"][r["correct"]] for r in rounds}
-    assert answers == {"Serbien", "Indien"}
+    # Ohne Redaktion keine Frage: Wo eine Meldung spielt, weiß erst sie (decisions.md Nr. 64)
+    cards = [b for b in blocks if b["type"] == "info"]
+    assert len(cards) == 2
+    assert cards[0]["caption_lang"] == "sr"  # Fremdsprache zuerst
+    for c in cards:
+        assert c["media"]["src"].startswith("https://")
+    assert {c["credit"].split(",")[0] for c in cards} == {
+        "Beispielzeitung aus Serbien",
+        "zeitung-in aus Indien",  # Quelle nicht übergeben: ihre ID
+    }
     video = blocks[-1]
     assert video["type"] == "video" and video["muted"] is True
     validate_rundown([*blocks, {"id": "ende", "type": "end", "title": "Sendeschluss"}])

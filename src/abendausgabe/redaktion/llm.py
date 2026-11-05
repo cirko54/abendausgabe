@@ -75,7 +75,9 @@ class Provider(Protocol):
     @property
     def model(self) -> str: ...
 
-    def complete(self, user: str, system: str | None = None) -> Completion: ...
+    def complete(
+        self, user: str, system: str | None = None, schema: dict[str, Any] | None = None
+    ) -> Completion: ...
 
 
 class OllamaProvider:
@@ -95,19 +97,21 @@ class OllamaProvider:
     def model(self) -> str:
         return f"ollama:{self._model}"
 
-    def complete(self, user: str, system: str | None = None) -> Completion:
+    def complete(
+        self, user: str, system: str | None = None, schema: dict[str, Any] | None = None
+    ) -> Completion:
         messages = [{"role": "system", "content": system}] if system else []
         messages.append({"role": "user", "content": user})
+        body: dict[str, Any] = {
+            "model": self._model,
+            "messages": messages,
+            "stream": False,
+            "options": {"temperature": 0},
+        }
+        if schema is not None:
+            body["format"] = schema  # strukturierte Ausgabe nach JSON-Schema
         try:
-            response = self.client.post(
-                f"{self.base_url}/api/chat",
-                json={
-                    "model": self._model,
-                    "messages": messages,
-                    "stream": False,
-                    "options": {"temperature": 0},
-                },
-            )
+            response = self.client.post(f"{self.base_url}/api/chat", json=body)
             response.raise_for_status()
             data = response.json()
         except (httpx.HTTPError, ValueError) as exc:
@@ -154,10 +158,13 @@ class LLM:
         ).fetchone()
         return float(row[0])
 
-    def _key(self, prompt: Prompt, user: str, system: str | None) -> str:
+    def _key(
+        self, prompt: Prompt, user: str, system: str | None, schema: dict[str, Any] | None
+    ) -> str:
         payload = json.dumps(
-            [self.model, prompt.module, prompt.name, prompt.version, system, user],
+            [self.model, prompt.module, prompt.name, prompt.version, system, user, schema],
             ensure_ascii=False,
+            sort_keys=True,
         )
         return hashlib.sha256(payload.encode()).hexdigest()
 
@@ -177,8 +184,14 @@ class LLM:
         )  # fmt: skip
         self.conn.commit()
 
-    def complete(self, prompt: Prompt, user: str, system: str | None = None) -> str:
-        key = self._key(prompt, user, system)
+    def complete(
+        self,
+        prompt: Prompt,
+        user: str,
+        system: str | None = None,
+        schema: dict[str, Any] | None = None,
+    ) -> str:
+        key = self._key(prompt, user, system, schema)
         row = self.conn.execute("SELECT text FROM llm_cache WHERE key = ?", (key,)).fetchone()
         if row is not None:
             self._log(prompt, cached=True, ok=True, result=None, duration_ms=0)
@@ -190,7 +203,7 @@ class LLM:
             )
         start = time.monotonic()
         try:
-            result = self.provider.complete(user, system)
+            result = self.provider.complete(user, system, schema)
         except LLMError as exc:
             self._log(prompt, False, False, None, int((time.monotonic() - start) * 1000), str(exc))
             raise

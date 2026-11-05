@@ -1,4 +1,4 @@
-"""Redaktion für den Weltblick: Schlagzeilen übersetzen (decisions.md Nr. 63).
+"""Redaktion für den Weltblick: Schlagzeilen übersetzen, Orte bestimmen (Nr. 63, 64).
 
 Läuft auf dem Mac. Die Faktenprüfung (SPEC §3) ist hier eine Zahlenprüfung: Jede
 Ziffernfolge der Übersetzung muss im Original stehen, sonst wird die Übersetzung
@@ -7,12 +7,17 @@ verworfen und die Sendung zeigt die Originalschlagzeile.
 
 from __future__ import annotations
 
+import json
 import logging
 import re
 import unicodedata
 from dataclasses import dataclass
 
-from abendausgabe.modules.weltblick.translations import MAX_TEXT, Pending
+import httpx
+from pydantic import BaseModel, Field, ValidationError
+
+from abendausgabe.modules.weltblick.geocode import Geocoder
+from abendausgabe.modules.weltblick.translations import MAX_TEXT, Pending, PendingPlace, Place
 from abendausgabe.redaktion.llm import LLM, Prompt, load_prompt
 
 log = logging.getLogger(__name__)
@@ -89,3 +94,51 @@ def translate(item: Pending, llm: LLM, template: Prompt) -> str | None:
     if result.text is None:
         log.info("Übersetzung verworfen (%s): %s → %s", result.reason, item.title, raw)
     return result.text
+
+
+# ------------------------------------------------------------- Orte (Nr. 64)
+
+
+class Located(BaseModel):
+    place: str = Field(default="", max_length=200)
+    country: str = Field(default="", max_length=2)
+
+
+LOCATE_SCHEMA = Located.model_json_schema()
+
+
+def locate_prompt() -> Prompt:
+    return load_prompt("weltblick", "locate")
+
+
+def locate(item: PendingPlace, llm: LLM, template: Prompt, geocoder: Geocoder) -> Place | None:
+    """Ort und Land, doppelt geprüft; sonst ein leerer Eintrag (zählt als erledigt).
+
+    None: Nominatim nicht erreichbar, beim nächsten Lauf noch einmal.
+
+    1. Der Ort steht wörtlich im deutschen Text, den der Fernseher zeigt.
+    2. Nominatim ordnet ihn demselben Land zu wie das Modell.
+    """
+    empty = Place(item.id, "", "", None, None)
+    raw = llm.complete(template, template.render(text=item.text), schema=LOCATE_SCHEMA)
+    try:
+        found = Located.model_validate(json.loads(raw))
+    except (ValueError, ValidationError):
+        log.info("Ort: keine gültige Antwort für %s: %s", item.id, raw[:200])
+        return empty
+    place, country = found.place.strip(), found.country.strip().upper()
+    if not place or len(country) != 2:
+        return empty
+    if place.lower() not in item.text.lower():
+        log.info("Ort verworfen (nicht im Text): %s in %s", place, item.text)
+        return empty
+    try:
+        hit = geocoder.lookup(place)
+    except (httpx.HTTPError, ValueError) as exc:
+        log.warning("Nominatim nicht erreichbar (%s), %s später noch einmal.", exc, place)
+        return None
+    if hit is None or hit.country != country:
+        log.info("Ort verworfen (Nominatim: %s, Modell: %s): %s", hit and hit.country, country,
+                 place)  # fmt: skip
+        return empty
+    return Place(item.id, country, place, hit.lat, hit.lon)

@@ -103,7 +103,7 @@ Danach bei jeder Änderung `make deploy-nas`, Log mit `make logs-nas`. Wer von e
 
 ## Quellen aus aller Welt
 
-Der Weltblick zeigt jeden Abend Bilder und Kurzvideos aus Quellen weltweit, zum Beispiel aus Indien, Pakistan, Serbien, der Ukraine, Afrika oder Australien, dazu Agenturvideos von Bluesky. Bei zwei Beiträgen raten alle, aus welchem Land die Meldung kommt. Die Quellen stehen im Katalog unter [catalog/](catalog/README.md); welche ein Haushalt nutzt, legt `config/feeds.yaml` fest. Es gibt nur offene Zugänge (RSS, offizielle APIs). Gespeichert werden nur Titel und Links, und das höchstens drei Tage. Neue Quellen für den Katalog gerne per Pull Request.
+Der Weltblick zeigt jeden Abend Bilder und Kurzvideos aus Quellen weltweit, zum Beispiel aus Indien, Pakistan, Serbien, der Ukraine, Afrika oder Australien, dazu Agenturvideos von Bluesky. Bei zwei Beiträgen raten alle, wo die Meldung spielt; die Auflösung nennt auch, wer berichtet hat. Dafür braucht es die Redaktion (unten), ohne sie kommen die Schlagzeilen ohne Frage. Die Quellen stehen im Katalog unter [catalog/](catalog/README.md); welche ein Haushalt nutzt, legt `config/feeds.yaml` fest. Es gibt nur offene Zugänge (RSS, offizielle APIs). Gespeichert werden nur Titel und Links, und das höchstens drei Tage. Neue Quellen für den Katalog gerne per Pull Request.
 
 ## Redaktion: Übersetzung
 
@@ -116,6 +116,8 @@ openssl rand -hex 32          # Token, in .env auf Server und Mac als ABEND_REDA
 ```
 
 Auf dem Mac in `.env` zusätzlich `ABEND_SERVER_URL=http://<Server-IP>:8470`. Dann den Server neu starten und auf dem Mac `uv run abend redaktion` einmal von Hand ausprobieren. `make install-redaktion` richtet den Lauf um 16:30, 18:30 und 19:40 ein (launchd, Log in `data/redaktion.log`). Jede Übersetzung wird geprüft: Steht darin eine Zahl, die das Original nicht hat, bleibt die Schlagzeile im Original.
+
+Danach bestimmt ein zweites Modell (`ABEND_MODEL_LOCATE`, Voreinstellung `qwen2.5:14b`, also auch `ollama pull qwen2.5:14b`), wo eine Meldung spielt. Der Ort muss wörtlich in der Schlagzeile stehen, und [Nominatim](https://nominatim.org) (OpenStreetMap, höchstens eine Anfrage pro Sekunde, mit Cache) muss ihn demselben Land zuordnen. Sonst gibt es zu dieser Meldung keine Frage.
 
 ## Mitbringsel
 

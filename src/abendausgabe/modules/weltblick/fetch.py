@@ -22,7 +22,7 @@ from sqlalchemy import select
 from abendausgabe import __version__
 from abendausgabe.core import ratelimit
 from abendausgabe.core.db import Database
-from abendausgabe.core.models import RawItem, Translation
+from abendausgabe.core.models import ItemPlace, RawItem, Translation
 from abendausgabe.modules.weltblick.catalog import Source
 
 log = logging.getLogger(__name__)
@@ -212,9 +212,8 @@ def purge(db: Database, now: datetime) -> int:
     with db.session() as s:
         count = s.query(RawItem).filter(RawItem.expires_at < now).delete()
         alive = select(RawItem.id)
-        s.query(Translation).filter(Translation.raw_item_id.not_in(alive)).delete(
-            synchronize_session=False
-        )
+        for table in (Translation, ItemPlace):
+            s.query(table).filter(table.raw_item_id.not_in(alive)).delete(synchronize_session=False)
         s.commit()
         return count
 
