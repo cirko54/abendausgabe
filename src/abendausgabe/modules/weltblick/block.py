@@ -1,7 +1,7 @@
 """Weltblick-Blöcke (decisions.md Nr. 52, 63, 64).
 
 Zwei Raterunden „Wo spielt diese Meldung?“ mit Bild und Schlagzeile, dazu ein Kurzvideo.
-Ort und Übersetzung kommen aus der Redaktion; ohne sie gibt es die Schlagzeilen ohne Frage.
+Ort und Übersetzung kommen aus der Redaktion; ohne sie findet das Ortsverzeichnis den Ort.
 Alles aus der Datenbank, damit der Sendestart nicht wartet.
 """
 
@@ -9,6 +9,7 @@ from __future__ import annotations
 
 import json
 import random
+from dataclasses import dataclass
 from datetime import UTC, date, datetime, timedelta
 from typing import Any
 
@@ -16,6 +17,7 @@ from sqlalchemy import select
 
 from abendausgabe.core.db import Database
 from abendausgabe.core.models import ItemPlace, RawItem, Translation
+from abendausgabe.modules.weltblick import gazetteer
 from abendausgabe.modules.weltblick.catalog import Source
 
 FRESH = timedelta(hours=36)
@@ -119,15 +121,33 @@ def _translations(db: Database, items: list[RawItem]) -> dict[str, str]:
         return {t.raw_item_id: t.text for t in rows}
 
 
-def _places(db: Database, items: list[RawItem]) -> dict[str, ItemPlace]:
+@dataclass(frozen=True)
+class Where:
+    country: str
+    place: str
+    checked: bool  # von der Redaktion geprüft (Nr. 64), sonst aus dem Ortsverzeichnis (Nr. 65)
+
+
+def _places(db: Database, items: list[RawItem], translated: dict[str, str]) -> dict[str, Where]:
+    """Wo eine Meldung spielt. Was die Redaktion geprüft hat, gilt, auch „kein Ort“."""
     ids = [i.id for i in items]
     if not ids:
         return {}
     with db.session() as s:
-        rows = s.scalars(
-            select(ItemPlace).where(ItemPlace.raw_item_id.in_(ids), ItemPlace.country != "")
-        ).all()
-        return {p.raw_item_id: p for p in rows}
+        rows = s.scalars(select(ItemPlace).where(ItemPlace.raw_item_id.in_(ids))).all()
+        done = {p.raw_item_id: p for p in rows}
+    out: dict[str, Where] = {}
+    names = gazetteer.load()
+    for item in items:
+        if item.id in done:
+            row = done[item.id]
+            if row.country:
+                out[item.id] = Where(row.country, row.place, True)
+            continue
+        found = names.locate(translated.get(item.id, "")) or names.locate(item.title)
+        if found is not None:
+            out[item.id] = Where(found.country, found.place, False)
+    return out
 
 
 def _caption(item: RawItem, translated: dict[str, str]) -> dict[str, Any]:
@@ -143,10 +163,17 @@ def _caption(item: RawItem, translated: dict[str, str]) -> dict[str, Any]:
     }
 
 
-def _names_country(caption: str, country: str) -> bool:
-    text = caption.lower()
-    stem = COUNTRY_DE[country].lower()[:4]
-    return stem in text or any(h in text for h in COUNTRY_HINTS.get(country, ()))
+def _names_country(texts: list[str], country: str) -> bool:
+    """Steht das Land schon auf dem Bildschirm, in der Übersetzung oder im Original?"""
+    names = gazetteer.load()
+    for caption in texts:
+        text = caption.lower()
+        stem = COUNTRY_DE[country].lower()[:4]
+        if stem in text or any(h in text for h in COUNTRY_HINTS.get(country, ())):
+            return True
+        if names.names_country(caption, country):
+            return True
+    return False
 
 
 def _source_with_home(item: RawItem, sources: dict[str, Source]) -> str:
@@ -160,24 +187,27 @@ def guess_rounds(
     sources: dict[str, Source],
     rng: random.Random,
     translated: dict[str, str] | None = None,
-    places: dict[str, ItemPlace] | None = None,
+    places: dict[str, Where] | None = None,
 ) -> list[dict[str, Any]]:
     """„Wo spielt diese Meldung?“ (decisions.md Nr. 64).
 
-    Gefragt wird nach dem Land, um das es geht, nicht nach dem Land der Zeitung. Das
-    weiß nur die Redaktion; ohne sie kommen die Schlagzeilen ohne Frage (headline_cards).
+    Gefragt wird nach dem Land, um das es geht, nicht nach dem Land der Zeitung. Das weiß
+    die Redaktion (Nr. 64) oder, ohne Mac, das Ortsverzeichnis (Nr. 65). Findet keins von
+    beiden etwas Brauchbares, kommen die Schlagzeilen ohne Frage (headline_cards).
     """
     translated, places = translated or {}, places or {}
 
-    def caption(i: RawItem) -> str:
-        return translated.get(i.id) or i.title
+    def shown(i: RawItem) -> list[str]:
+        return [translated[i.id], i.title] if i.id in translated else [i.title]
 
     candidates = [
         i for i in items
         if i.image and i.id in places and places[i.id].country in COUNTRY_DE
-        and not _names_country(caption(i), places[i.id].country)
+        and not _names_country(shown(i), places[i.id].country)
     ]  # fmt: skip
     rng.shuffle(candidates)
+    # Von der Redaktion geprüfte Orte zuerst, das Ortsverzeichnis nur als Rückfall
+    candidates.sort(key=lambda i: not places[i.id].checked)
     pool = sorted({places[i.id].country for i in candidates} | set(NEIGHBOURS))
     # eine Runde aus einer Quelle in fremder Sprache, falls vorhanden; sonst bunt gemischt
     foreign = [i for i in candidates if i.language != "en"]
@@ -282,7 +312,7 @@ def weltblick_blocks(db: Database, sources: list[Source], now: datetime) -> list
     by_id = {s.id: s for s in sources}
     items = sorted(_fresh_items(db, now, today), key=lambda i: i.id)
     translated = _translations(db, items)
-    blocks = guess_rounds(items, by_id, rng, translated, _places(db, items))
+    blocks = guess_rounds(items, by_id, rng, translated, _places(db, items, translated))
     if not blocks:
         blocks = headline_cards(items, by_id, rng, translated)
     video = video_round(items, by_id, rng, translated)

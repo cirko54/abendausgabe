@@ -307,3 +307,63 @@ def test_env_file_does_not_override_environment(
     assert os.environ["ABEND_X_TEST"] == "aus-umgebung"
     assert os.environ["ABEND_Y_TEST"] == "zitiert"
     monkeypatch.delenv("ABEND_Y_TEST")
+
+
+# ------------------------------------------- Ohne Mac: Ortsverzeichnis (Nr. 65)
+
+
+def test_gazetteer_finds_one_country_or_nothing() -> None:
+    from abendausgabe.modules.weltblick import gazetteer
+
+    names = gazetteer.load()
+    assert names.locate("Strike on school in Zaporizhzhia kills 33").country == "UA"  # type: ignore[union-attr]
+    assert names.locate("کراچی میں احتجاج").country == "PK"  # type: ignore[union-attr]
+    assert names.locate("Napad na bajkere u Nišu i Niš").country == "RS"  # type: ignore[union-attr]
+    assert names.locate("Ijebu-Ode residents protest").place == "Ijebu Ode"  # type: ignore[union-attr]
+    assert names.locate("Talks in Moscow after strike on Kyiv") is None  # zwei Länder
+    assert names.locate("St. Petersburg court orders eviction") is None  # mehrdeutig
+    assert names.locate("इंडिया गठबंधन की रैली से दूरी") is None  # „Kundgebung“, nicht Raleigh
+    assert names.names_country("Ukrainian forces advance", "UA")
+    assert not names.names_country("Strike in Zaporizhzhia", "UA")
+
+
+def test_without_mac_the_gazetteer_asks_the_question(db: Database) -> None:
+    _store(db)
+    fetch.store(db, INDIA, [
+        _item("in-1", "Strike on school in Zaporizhzhia kills 33"),
+        _item("in-2", "Ukraine: protests in Lviv"),  # Land steht schon da
+        _item("in-3", "Smog in Delhi worsens"),
+    ], NOW)  # fmt: skip
+    rounds = [
+        b for b in wb.weltblick_blocks(db, [SERBIA, GERMAN, INDIA], NOW) if b["type"] == "choice"
+    ]
+    assert {b["raw_item_id"] for b in rounds} == {"in-1", "in-3"}
+    by_id = {b["raw_item_id"]: b for b in rounds}
+    assert by_id["in-1"]["options"][by_id["in-1"]["correct"]] == "Ukraine"
+    assert by_id["in-3"]["source"].endswith("· Ort: Delhi")
+    # Was die Redaktion als „kein Ort“ geprüft hat, rät das Verzeichnis nicht nach
+    translations.save_places(db, [Place("in-3", "", "", None, None)], "fake:1", "1")
+    rounds = [
+        b for b in wb.weltblick_blocks(db, [SERBIA, GERMAN, INDIA], NOW) if b["type"] == "choice"
+    ]
+    assert {b["raw_item_id"] for b in rounds} == {"in-1"}
+
+
+def test_shortlist_is_small_and_mixed(db: Database) -> None:
+    many = [_item(f"rs-{n:02d}", f"Vest {n}", hours=1 + n % 30) for n in range(30)]
+    fetch.store(db, SERBIA, many, NOW)
+    fetch.store(db, INDIA, [_item(f"in-{n}", f"News {n}") for n in range(3)], NOW)
+    picked = translations.shortlist(db, NOW, size=6)
+    assert len(picked) == 6
+    assert sum(p.startswith("in-") for p in picked) == 3  # reihum, nicht nur die größte Quelle
+    assert len(translations.shortlist(db, NOW)) == translations.PER_SOURCE + 3
+
+
+def test_sleep_only_when_nobody_uses_the_mac() -> None:
+    assert redaktion.idle_seconds('    | |     "HIDIdleTime" = 900000000000\n') == 900
+    assert redaktion.idle_seconds("nichts") is None
+    busy = "Assertion status system-wide:\n   PreventUserIdleDisplaySleep    1\n"
+    idle = "Assertion status system-wide:\n   PreventUserIdleDisplaySleep    0\n" \
+        "   PreventUserIdleSystemSleep     1\n"  # fmt: skip
+    assert redaktion.display_kept_awake(busy)
+    assert not redaktion.display_kept_awake(idle)  # Dauer-Sperren mancher Apps zählen nicht

@@ -1,7 +1,8 @@
 """Ergebnisse der Redaktion zu Schlagzeilen speichern (decisions.md Nr. 63, 64).
 
 Die Redaktion auf dem Mac holt offene Schlagzeilen und schreibt Übersetzungen zurück.
-Übersetzt wird nur, was in der Sendung vorkommen kann: frisch, mit Bild oder Video.
+Bearbeitet wird nur eine Vorauswahl dessen, was heute in die Sendung kommen kann
+(Nr. 65): So bleibt der Lauf auf dem Mac kurz und braucht wenig Strom.
 """
 
 from __future__ import annotations
@@ -11,11 +12,42 @@ from datetime import UTC, datetime, timedelta
 
 from sqlalchemy import select
 
+from abendausgabe.core.dates import BERLIN
 from abendausgabe.core.db import Database
 from abendausgabe.core.models import ItemPlace, RawItem, Translation
 
-WINDOW = timedelta(hours=48)
+WINDOW = timedelta(hours=36)  # wie FRESH im Weltblick
 MAX_TEXT = 400
+SHORTLIST = 40
+PER_SOURCE = 4
+
+
+def shortlist(db: Database, now: datetime, size: int = SHORTLIST) -> list[str]:
+    """Kandidaten für heute: frisch, nicht schon gezeigt, mit Bild oder Video.
+
+    Reihum über die Quellen, je Quelle die neuesten, damit die Auswahl bunt bleibt.
+    """
+    today = now.astimezone(BERLIN).date()
+    with db.session() as s:
+        rows = s.scalars(
+            select(RawItem)
+            .where(
+                RawItem.published_at >= (now - WINDOW).astimezone(UTC),
+                (RawItem.shown_on.is_(None)) | (RawItem.shown_on == today),
+                (RawItem.image.is_not(None)) | (RawItem.video_json.is_not(None)),
+            )
+            .order_by(RawItem.published_at.desc(), RawItem.id)
+        ).all()
+        by_source: dict[str, list[str]] = {}
+        for r in rows:
+            by_source.setdefault(r.source_id, []).append(r.id)
+    picked: list[str] = []
+    for rank in range(PER_SOURCE):
+        for source_id in sorted(by_source):
+            ids = by_source[source_id]
+            if rank < len(ids) and len(picked) < size:
+                picked.append(ids[rank])
+    return picked
 
 
 @dataclass(frozen=True)
@@ -35,10 +67,9 @@ def pending(
         rows = s.scalars(
             select(RawItem)
             .where(
-                RawItem.published_at >= (now - WINDOW).astimezone(UTC),
+                RawItem.id.in_(shortlist(db, now)),
                 RawItem.language != target,
                 RawItem.language != "",
-                (RawItem.image.is_not(None)) | (RawItem.video_json.is_not(None)),
                 RawItem.id.not_in(done),
             )
             .order_by(RawItem.published_at.desc())
@@ -105,7 +136,7 @@ def pending_places(
                 (Translation.raw_item_id == RawItem.id) & (Translation.language == "de"),
             )
             .where(
-                RawItem.published_at >= (now - WINDOW).astimezone(UTC),
+                RawItem.id.in_(shortlist(db, now)),
                 RawItem.image.is_not(None),
                 RawItem.id.not_in(done),
                 (RawItem.language == "de") | Translation.text.is_not(None),

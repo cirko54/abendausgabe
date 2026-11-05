@@ -50,7 +50,7 @@ migrate-db-nas:
 logs-nas:
 	ssh -t $(NAS) 'cd $(NAS_DIR) && sudo /usr/local/bin/docker compose logs --tail 100 -f app'
 
-# Redaktion auf dem Mac per launchd (16:30, 18:30, 19:40); Einstellungen in .env
+# Redaktion auf dem Mac per launchd (19:30); Einstellungen in .env
 AGENT = $(HOME)/Library/LaunchAgents/app.abendausgabe.redaktion.plist
 install-redaktion:
 	@test -f .env || { echo ".env fehlt: ABEND_SERVER_URL und ABEND_REDAKTION_TOKEN eintragen (.env.example)."; exit 1; }

@@ -352,8 +352,30 @@ Offen für Phase 1: TV-Ergebnis hier eintragen, Router-Typ (Präsenz), Kalenderq
       - Nominatim fragt die Redaktion auf dem Mac ab, höchstens 1 Anfrage pro Sekunde (zentraler Ratelimiter), eigener User-Agent, Cache in data/redaktion.sqlite3.
       - Koordinaten werden mitgespeichert (Tabelle `item_place`), für das Ortsraten auf der Karte (Weltecke, SPEC §8.3).
     - Geschenkte Fragen fallen weg: Steht das Land schon in der Schlagzeile („Spanien: …“, „ukrainische Armee …“), kommt die Meldung nicht als Frage.
-    - Ohne Redaktion (Notausgabe, Mac aus) gibt es keine Länderfrage mehr. Der Weltblick zeigt dann zwei Schlagzeilen mit Bild und Quelle, ohne Frage. Eine irreführende Frage ist schlechter als keine.
+    - Ohne Redaktion (Notausgabe, Mac aus) gibt es keine Länderfrage mehr. Der Weltblick zeigt dann zwei Schlagzeilen mit Bild und Quelle, ohne Frage. Eine irreführende Frage ist schlechter als keine. Überholt durch Nr. 65: Ohne Mac findet ein Ortsverzeichnis den Ort; nur wenn auch das nichts findet, kommen die Schlagzeilen ohne Frage.
     - Das Land des Mediums bleibt interessant, wenn mehrere Länder über dieselbe Geschichte berichten. Das kommt als Blickwinkel-Vergleich (Nr. 47, Schritt 5) zurück, etwa „Aus welchem Land kommt dieser Blick auf die US-Wahl?“. SPEC §2.1 ist entsprechend angepasst.
     - Lauf am 5.11. mit echten Schlagzeilen: 300 geprüft, 95 verortet, 10 von Nominatim verworfen (darunter Komyshuvakha, vom Modell Russland zugeordnet, und die Krim). Im Headless-Chrome geprüft: Frage, Auflösung mit Quelle und Ort, Übersetzung mit Original darunter.
     - **Annahme:** So umgesetzt ohne Rückfrage; bitte am Fernseher prüfen, ob die Frage so trägt.
     - Nebenbei aufgefallen: N1 Srbija liefert im selben Feed auch englische Meldungen (/english/), im Katalog steht Serbisch. Die Übersetzung stört das nicht, nur der Hinweis über die Sprache stimmt dann nicht.
+
+## 2026-11-05 – Ohne Mac und mit wenig Strom
+
+65. Frage des Haushalts: Der Mac läuft nicht immer. Gibt es einen Rückfall, und lässt sich der Stromverbrauch klein halten?
+    - Rückfall auf dem NAS ohne LLM: ein Ortsverzeichnis aus Natural Earth 1:10m (gemeinfrei). Es umfasst Orte, Länder sowie Bundesstaaten und Provinzen, mit Namen auch auf Deutsch, Hindi, Urdu, Russisch, Ukrainisch, Arabisch und Persisch. Gebaut wird es mit scripts/build_places.py, das Ergebnis liegt unter modules/weltblick/data/places.json (1 MB, 24.000 Namen). Neue Datenquelle, keine neue Python-Abhängigkeit.
+      - Eine Frage gibt es nur, wenn alle gefundenen Orts- und Ländernamen in genau ein Land fallen. Es gelten dieselben Regeln wie in Nr. 64: Steht das Land schon in der Schlagzeile, gibt es keine Frage, und die Auflösung nennt den Ort.
+      - Damit gewöhnliche Wörter nicht als Orte gelten, fehlen im Verzeichnis:
+        - Namen, die es in mehreren Ländern gibt (Hyderabad, Punjab, St. Petersburg, Florida);
+        - Orte unter 50.000 Einwohnern; in anderen Schriften Namen unter 5 Zeichen und Orte unter 100.000 Einwohnern;
+        - eine Sperrliste häufiger Wörter und Personennamen.
+      - Gefundene Fehlgriffe vor diesen Regeln: Urdu „گیا“ (ging) wurde zum Ort Gaya, Hindi „रैली“ (Kundgebung) zu Raleigh, „Duma“ zu einem Ort in Syrien, „Vance“ auf Urdu zu Venedig. Restrisiko: Personen mit Ortsnamen („Geeta Basra“). Die Auflösung zeigt deshalb immer den Ort, auf den sich die Antwort stützt.
+      - Was die Redaktion geprüft hat, hat Vorrang, auch ihr „kein Ort“. Das Verzeichnis gilt nur für Beiträge, die die Redaktion nicht gesehen hat.
+      - Ergebnis mit den Schlagzeilen vom 5.11.: 145 von 467 bekommen einen Ort; Fragen etwa zu Peshawar, Karachi, Cambridge oder Delhi. Ohne Mac kommen die Schlagzeilen im Original.
+    - Weniger Arbeit für den Mac: Das NAS stellt eine Vorauswahl von 40 Kandidaten zusammen (frisch, nicht gezeigt, mit Bild oder Video, reihum höchstens 4 je Quelle). Nur diese übersetzt und verortet die Redaktion. Statt 300 Schlagzeilen und 15 Minuten sind es 40 und wenige Minuten.
+    - Ein Lauf am Abend um 19:30 statt drei. Ollama gibt das Modell nach einer Minute frei (`keep_alive`).
+    - Mit `ABEND_REDAKTION_SLEEP_AFTER=15` schickt die Redaktion den Mac danach in den Ruhezustand, wenn seit 15 Minuten keine Eingabe kam und kein Video läuft (`PreventUserIdleDisplaySleep`). Dauerhafte Sperren mancher Apps (Siri AI, Claude-App) zählen nicht, sonst schliefe der Mac nie. Ob `pmset sleepnow` ohne Administratorrechte geht, ist am Mac noch nicht geprüft; schlägt es fehl, steht das im Log.
+    - Wecken: `sudo pmset repeat wake MTWRFSU 19:25:00` (einmalig, durch den Nutzer). Der Mac muss dafür schlafen, nicht ausgeschaltet sein. Ein Einschalten aus dem ausgeschalteten Zustand hilft nicht: FileVault ist an, also gibt es keine automatische Anmeldung, und ohne Anmeldung läuft kein launchd-Agent.
+    - Verworfen:
+      - ein kleines LLM auf dem NAS (Celeron, wenig RAM, langsam und schlechte Übersetzung);
+      - Übersetzung über einen Webdienst (Daten verlassen das Haus, Schlüssel nötig);
+      - Wake-on-LAN vom NAS (der Mac hängt im WLAN);
+      - die Claude-API als Rückfall (Kosten, Nr. 54; bleibt eine Option für später).

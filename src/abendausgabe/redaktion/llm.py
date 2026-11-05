@@ -107,6 +107,8 @@ class OllamaProvider:
             "messages": messages,
             "stream": False,
             "options": {"temperature": 0},
+            # Modell bald wieder aus dem Speicher; der Lauf ist kurz (decisions.md Nr. 65)
+            "keep_alive": "1m",
         }
         if schema is not None:
             body["format"] = schema  # strukturierte Ausgabe nach JSON-Schema

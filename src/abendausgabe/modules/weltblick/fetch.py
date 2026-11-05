@@ -222,9 +222,10 @@ async def refresh_all(
     db: Database,
     sources: list[Source],
     transport: httpx.AsyncBaseTransport | None = None,
+    now: datetime | None = None,
 ) -> dict[str, int]:
     """Alle Quellen abrufen; eine kaputte Quelle hält die anderen nicht auf."""
-    now = datetime.now(UTC)
+    now = now or datetime.now(UTC)
     result: dict[str, int] = {}
     gate = asyncio.Semaphore(CONCURRENCY)
     async with httpx.AsyncClient(

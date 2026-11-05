@@ -6,13 +6,17 @@ bestimmen, wo die Meldung spielt (Nr. 64).
 
 Einstellungen aus der Umgebung oder aus `.env` neben dem Repo (ABEND_ENV_FILE):
 ABEND_SERVER_URL, ABEND_REDAKTION_TOKEN, ABEND_LLM_PROVIDER, ABEND_OLLAMA_URL,
-ABEND_MODEL_TRANSLATE, ABEND_MODEL_LOCATE, ABEND_LLM_BUDGET_EUR, ABEND_REDAKTION_MAX_MIN.
+ABEND_MODEL_TRANSLATE, ABEND_MODEL_LOCATE, ABEND_LLM_BUDGET_EUR, ABEND_REDAKTION_MAX_MIN,
+ABEND_REDAKTION_SLEEP_AFTER (Minuten ohne Eingabe, danach Ruhezustand; leer: nie).
 """
 
 from __future__ import annotations
 
 import logging
 import os
+import re
+import subprocess
+import sys
 import time
 from dataclasses import dataclass
 from datetime import UTC, datetime
@@ -53,6 +57,7 @@ class Config:
     budget_eur: float
     max_seconds: float
     store: Path
+    sleep_after_min: float | None
 
     @classmethod
     def from_env(cls) -> Config:
@@ -67,7 +72,51 @@ class Config:
             budget_eur=float(os.environ.get("ABEND_LLM_BUDGET_EUR", "1.00")),
             max_seconds=60 * float(os.environ.get("ABEND_REDAKTION_MAX_MIN", "15")),
             store=data_dir / "redaktion.sqlite3",
+            sleep_after_min=_minutes(os.environ.get("ABEND_REDAKTION_SLEEP_AFTER", "")),
         )
+
+
+def _minutes(value: str) -> float | None:
+    value = value.strip().lower()
+    if value in {"", "aus", "off", "0"}:
+        return None
+    return float(value)
+
+
+def _run(*cmd: str) -> str:
+    return subprocess.run(cmd, capture_output=True, text=True, timeout=20, check=False).stdout
+
+
+def idle_seconds(ioreg: str) -> float | None:
+    """Sekunden seit der letzten Maus- oder Tastatureingabe (ioreg -c IOHIDSystem)."""
+    match = re.search(r'"HIDIdleTime" = (\d+)', ioreg)
+    return int(match.group(1)) / 1e9 if match else None
+
+
+def display_kept_awake(assertions: str) -> bool:
+    """Spielt ein Video oder läuft eine Präsentation? (pmset -g assertions)
+
+    PreventUserIdleSystemSleep zählt nicht: Das halten manche Apps dauerhaft.
+    """
+    match = re.search(r"^\s*PreventUserIdleDisplaySleep\s+(\d+)", assertions, re.M)
+    return bool(match and int(match.group(1)) > 0)
+
+
+def maybe_sleep(config: Config) -> None:
+    """Nach dem Lauf in den Ruhezustand, wenn niemand den Mac benutzt (Nr. 65)."""
+    if config.sleep_after_min is None or sys.platform != "darwin":
+        return
+    idle = idle_seconds(_run("ioreg", "-c", "IOHIDSystem", "-d", "4"))
+    if idle is None or idle < 60 * config.sleep_after_min:
+        log.info("Mac wird benutzt (%s s ohne Eingabe), bleibt wach.", idle and round(idle))
+        return
+    if display_kept_awake(_run("pmset", "-g", "assertions")):
+        log.info("Ein Video oder eine Präsentation läuft, Mac bleibt wach.")
+        return
+    log.info("Niemand am Mac seit %d min: Ruhezustand.", idle // 60)
+    result = subprocess.run(["pmset", "sleepnow"], capture_output=True, text=True, check=False)
+    if result.returncode != 0:
+        log.warning("Ruhezustand ging nicht: %s", (result.stderr or result.stdout).strip())
 
 
 class Server:
@@ -191,6 +240,13 @@ def run(date: str) -> int:
     logging.basicConfig(level=logging.INFO, format="%(asctime)s %(levelname)s %(message)s")
     load_env_file(Path(os.environ.get("ABEND_ENV_FILE", PROJECT_ROOT / ".env")))
     config = Config.from_env()
+    try:
+        return _work(config, date)
+    finally:
+        maybe_sleep(config)  # auch nach einem Fehler, sonst bleibt der Mac die Nacht wach
+
+
+def _work(config: Config, date: str) -> int:
     if not config.token:
         log.error("ABEND_REDAKTION_TOKEN fehlt. Denselben Wert in .env auf Server und Mac setzen.")
         return 2

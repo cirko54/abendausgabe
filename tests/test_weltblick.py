@@ -71,9 +71,10 @@ async def test_refresh_stores_once_and_survives_broken_source(db: Database) -> N
 
     broken = Source("kaputt", "Kaputt", "rss", "", ("IN",), "en", feed="https://kaputt.example/f")
     transport = httpx.MockTransport(handler)
-    result = await fetch.refresh_all(db, [SERBIA, AGENCY, broken], transport)
+    # feste Zeit: Die Beiträge der Fixtures sind sonst nach drei Tagen abgelaufen
+    result = await fetch.refresh_all(db, [SERBIA, AGENCY, broken], transport, now=NOW)
     assert result["kaputt"] == -1 and result["agentur"] == 2
-    again = await fetch.refresh_all(db, [SERBIA, AGENCY], transport)
+    again = await fetch.refresh_all(db, [SERBIA, AGENCY], transport, now=NOW)
     assert again["zeitung-rs"] == 0  # nichts doppelt
 
 
